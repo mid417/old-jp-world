@@ -143,6 +143,23 @@ test('giant torii marks the negative-z street end at double the previous giant s
   assert.equal(giantGatePillarThickness, previousPillarThickness * 2)
 })
 
+test('giant torii uses a more shrine-like layered structure without changing the regular gate baseline', () => {
+  const districtSource = fs.readFileSync(new URL('../src/components/KyotoNightDistrict.tsx', import.meta.url), 'utf8')
+
+  assert.match(districtSource, /<TempleGate position=\{GATE_POSITION\} \/>/)
+  assert.match(
+    districtSource,
+    /<TempleGate position=\{GIANT_GATE_POSITION\} scale=\{GIANT_GATE_SCALE\} variant="grand" \/>/,
+  )
+  assert.match(districtSource, /variant\?: 'standard' \| 'grand'/)
+  assert.match(districtSource, /const isGrand = variant === 'grand'/)
+  assert.match(districtSource, /const shimakiPosition/)
+  assert.match(districtSource, /const kasagiPosition/)
+  assert.match(districtSource, /const gakuzukaPosition/)
+  assert.match(districtSource, /const supplementalNukiPosition/)
+  assert.match(districtSource, /<cylinderGeometry args=\{\[pillarTopRadius, pillarBottomRadius, pillarHeight, 16\]\} \/>/)
+})
+
 const hexToRgb = (hex) => {
   const normalized = hex.replace('#', '')
   return [

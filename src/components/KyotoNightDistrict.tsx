@@ -41,7 +41,7 @@ export function KyotoNightDistrict() {
       ))}
 
       <TempleGate position={GATE_POSITION} />
-      <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} />
+      <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} variant="grand" />
       <PagodaTower position={PAGODA_POSITION} />
       <CanalDetails />
     </>
@@ -633,36 +633,66 @@ function LanternPost({ lantern }: { lantern: LanternConfig }) {
 interface TempleGateProps {
   position?: Vector3Tuple
   scale?: number
+  variant?: 'standard' | 'grand'
 }
 
-function TempleGate({ position = [0, 0, 0], scale = 1 }: TempleGateProps) {
+function TempleGate({ position = [0, 0, 0], scale = 1, variant = 'standard' }: TempleGateProps) {
+  const isGrand = variant === 'grand'
   const pillarOffsetX = 3.35 * scale
-  const pillarHalfExtents: Vector3Tuple = [0.35 * scale, 2.9 * scale, 0.35 * scale]
-  const pillarSize: Vector3Tuple = [0.7 * scale, 5.8 * scale, 0.7 * scale]
-  const upperBeamPosition: Vector3Tuple = [0, 5.65 * scale, 0]
-  const upperBeamHalfExtents: Vector3Tuple = [4.4 * scale, 0.3 * scale, 0.6 * scale]
-  const upperBeamSize: Vector3Tuple = [8.8 * scale, 0.6 * scale, 1.2 * scale]
-  const topBeamPosition: Vector3Tuple = [0, 6.22 * scale, 0]
+  const pillarHeight = (isGrand ? 6.1 : 5.8) * scale
+  const pillarHalfExtents: Vector3Tuple = [0.35 * scale, pillarHeight / 2, 0.35 * scale]
+  const pillarTopRadius = (isGrand ? 0.26 : 0.35) * scale
+  const pillarBottomRadius = (isGrand ? 0.36 : 0.35) * scale
+  const pillarTilt = isGrand ? 0.045 : 0
+  const pillarCenterY = pillarHeight / 2
+  const upperBeamPosition: Vector3Tuple = [0, (isGrand ? 5.5 : 5.65) * scale, 0]
+  const upperBeamHalfExtents: Vector3Tuple = [(isGrand ? 4.6 : 4.4) * scale, 0.3 * scale, 0.6 * scale]
+  const upperBeamSize: Vector3Tuple = [upperBeamHalfExtents[0] * 2, 0.6 * scale, 1.2 * scale]
+  const topBeamPosition: Vector3Tuple = [0, (isGrand ? 6.38 : 6.22) * scale, 0]
   const topBeamSize: Vector3Tuple = [9.8 * scale, 0.18 * scale, 1.8 * scale]
-  const tieBeamPosition: Vector3Tuple = [0, 4.95 * scale, 0]
-  const tieBeamSize: Vector3Tuple = [6.9 * scale, 0.34 * scale, 0.9 * scale]
-  const lanternOffsetX = 2.2 * scale
-  const lanternHeight = 4.15 * scale
+  const tieBeamPosition: Vector3Tuple = [0, (isGrand ? 4.82 : 4.95) * scale, 0]
+  const tieBeamSize: Vector3Tuple = [(isGrand ? 7.4 : 6.9) * scale, (isGrand ? 0.28 : 0.34) * scale, 0.9 * scale]
+  const supplementalNukiPosition: Vector3Tuple = [0, 4.12 * scale, 0.08 * scale]
+  const supplementalNukiSize: Vector3Tuple = [5.3 * scale, 0.16 * scale, 0.5 * scale]
+  const shimakiPosition: Vector3Tuple = [0, 5.98 * scale, 0.04 * scale]
+  const shimakiCenterSize: Vector3Tuple = [7.5 * scale, 0.42 * scale, 1.26 * scale]
+  const shimakiWingSize: Vector3Tuple = [1.86 * scale, 0.34 * scale, 1.2 * scale]
+  const kasagiPosition: Vector3Tuple = [0, 6.5 * scale, -0.02 * scale]
+  const kasagiCenterSize: Vector3Tuple = [7.9 * scale, 0.28 * scale, 1.6 * scale]
+  const kasagiWingSize: Vector3Tuple = [2.16 * scale, 0.24 * scale, 1.54 * scale]
+  const gakuzukaPosition: Vector3Tuple = [0, 5.74 * scale, 0.08 * scale]
+  const gakuzukaSize: Vector3Tuple = [0.5 * scale, 0.84 * scale, 0.34 * scale]
+  const plaquePosition: Vector3Tuple = [0, 5.28 * scale, 0.56 * scale]
+  const plaqueSize: Vector3Tuple = [1.12 * scale, 0.82 * scale, 0.08 * scale]
+  const lanternOffsetX = (isGrand ? 2.55 : 2.2) * scale
+  const lanternHeight = (isGrand ? 4.3 : 4.15) * scale
+  const wingBeamRise = 0.08 * scale
+  const wingBeamTilt = 0.06
+  const leftPillarPosition: Vector3Tuple = [-pillarOffsetX, pillarCenterY, 0]
+  const rightPillarPosition: Vector3Tuple = [pillarOffsetX, pillarCenterY, 0]
 
   return (
     <group position={position}>
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={pillarHalfExtents} position={[-pillarOffsetX, 2.9 * scale, 0]} />
-        <CuboidCollider args={pillarHalfExtents} position={[pillarOffsetX, 2.9 * scale, 0]} />
+        <CuboidCollider args={pillarHalfExtents} position={leftPillarPosition} />
+        <CuboidCollider args={pillarHalfExtents} position={rightPillarPosition} />
         <CuboidCollider args={upperBeamHalfExtents} position={upperBeamPosition} />
 
-        <mesh position={[-pillarOffsetX, 2.9 * scale, 0]} castShadow>
-          <boxGeometry args={pillarSize} />
+        <mesh position={leftPillarPosition} rotation={[0, 0, pillarTilt]} castShadow>
+          {isGrand ? (
+            <cylinderGeometry args={[pillarTopRadius, pillarBottomRadius, pillarHeight, 16]} />
+          ) : (
+            <boxGeometry args={[pillarBottomRadius * 2, pillarHeight, pillarBottomRadius * 2]} />
+          )}
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
-        <mesh position={[pillarOffsetX, 2.9 * scale, 0]} castShadow>
-          <boxGeometry args={pillarSize} />
+        <mesh position={rightPillarPosition} rotation={[0, 0, -pillarTilt]} castShadow>
+          {isGrand ? (
+            <cylinderGeometry args={[pillarTopRadius, pillarBottomRadius, pillarHeight, 16]} />
+          ) : (
+            <boxGeometry args={[pillarBottomRadius * 2, pillarHeight, pillarBottomRadius * 2]} />
+          )}
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
@@ -671,15 +701,76 @@ function TempleGate({ position = [0, 0, 0], scale = 1 }: TempleGateProps) {
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.8} />
         </mesh>
 
-        <mesh position={topBeamPosition} castShadow>
-          <boxGeometry args={topBeamSize} />
-          <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
-        </mesh>
-
         <mesh position={tieBeamPosition} castShadow>
           <boxGeometry args={tieBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.8} />
         </mesh>
+
+        {isGrand ? (
+          <>
+            <mesh position={supplementalNukiPosition} castShadow>
+              <boxGeometry args={supplementalNukiSize} />
+              <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
+            </mesh>
+
+            <mesh position={shimakiPosition} castShadow>
+              <boxGeometry args={shimakiCenterSize} />
+              <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
+            </mesh>
+            <mesh
+              position={[-4.42 * scale, shimakiPosition[1] - wingBeamRise, shimakiPosition[2]]}
+              rotation={[0, 0, wingBeamTilt]}
+              castShadow
+            >
+              <boxGeometry args={shimakiWingSize} />
+              <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
+            </mesh>
+            <mesh
+              position={[4.42 * scale, shimakiPosition[1] - wingBeamRise, shimakiPosition[2]]}
+              rotation={[0, 0, -wingBeamTilt]}
+              castShadow
+            >
+              <boxGeometry args={shimakiWingSize} />
+              <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
+            </mesh>
+
+            <mesh position={kasagiPosition} castShadow>
+              <boxGeometry args={kasagiCenterSize} />
+              <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
+            </mesh>
+            <mesh
+              position={[-4.82 * scale, kasagiPosition[1] - wingBeamRise * 1.2, kasagiPosition[2]]}
+              rotation={[0, 0, wingBeamTilt]}
+              castShadow
+            >
+              <boxGeometry args={kasagiWingSize} />
+              <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
+            </mesh>
+            <mesh
+              position={[4.82 * scale, kasagiPosition[1] - wingBeamRise * 1.2, kasagiPosition[2]]}
+              rotation={[0, 0, -wingBeamTilt]}
+              castShadow
+            >
+              <boxGeometry args={kasagiWingSize} />
+              <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
+            </mesh>
+
+            <mesh position={gakuzukaPosition} castShadow>
+              <boxGeometry args={gakuzukaSize} />
+              <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.8} />
+            </mesh>
+
+            <mesh position={plaquePosition} castShadow>
+              <boxGeometry args={plaqueSize} />
+              <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.7} />
+            </mesh>
+          </>
+        ) : (
+          <mesh position={topBeamPosition} castShadow>
+            <boxGeometry args={topBeamSize} />
+            <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
+          </mesh>
+        )}
       </RigidBody>
 
       <GateLantern position={[-lanternOffsetX, lanternHeight, 0]} />
