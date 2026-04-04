@@ -126,6 +126,8 @@ export const WORLD_CONFIG = {
 } as const
 
 export const GATE_POSITION = vector3(0, 0, 22 * WORLD_DIMENSION_MULTIPLIER)
+export const GIANT_GATE_POSITION = vector3(0, 0, -WORLD_CONFIG.streetLength / 2 - 4.5)
+export const GIANT_GATE_SCALE = 4.2
 export const PAGODA_POSITION = vector3(-18.2 * WORLD_DIMENSION_MULTIPLIER, 0, -24 * WORLD_DIMENSION_MULTIPLIER)
 
 export const COLORS = {

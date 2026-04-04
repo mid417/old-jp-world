@@ -7,6 +7,8 @@ import {
   COLORS,
   DETAIL_DISTRICT_RADIUS,
   GATE_POSITION,
+  GIANT_GATE_POSITION,
+  GIANT_GATE_SCALE,
   MACHIYA_BUILDINGS,
   MACHIYA_ROOF_PROFILES,
   OUTSKIRT_BUILDINGS,
@@ -111,12 +113,34 @@ test('machiya rows are distributed across the expanded street without leaving la
 test('night lighting and landmark anchors exist across the district', () => {
   assert.ok(STREET_LANTERNS.length >= 8)
   assert.ok(GATE_POSITION[2] > WORLD_CONFIG.streetLength * 0.3)
+  assert.ok(GIANT_GATE_POSITION[2] < WORLD_CONFIG.spawnPosition[2])
+  assert.ok(GIANT_GATE_POSITION[2] < GATE_POSITION[2])
+  assert.ok(Math.abs(GIANT_GATE_POSITION[2] + WORLD_CONFIG.streetLength / 2) <= 6)
+  assert.equal(GIANT_GATE_SCALE, 4.2)
   assert.ok(PAGODA_POSITION[0] < 0)
   assert.ok(PAGODA_POSITION[2] < -WORLD_CONFIG.streetLength * 0.3)
 
   const lanternZPositions = STREET_LANTERNS.map((lantern) => lantern.position[2])
   assert.ok(Math.max(...lanternZPositions) > WORLD_CONFIG.streetLength * 0.25)
   assert.ok(Math.min(...lanternZPositions) < -WORLD_CONFIG.streetLength * 0.25)
+})
+
+test('giant torii marks the negative-z street end at double the previous giant scale', () => {
+  const previousGiantGateScale = 2.1
+  const previousPillarThickness = 0.7 * previousGiantGateScale
+  const streetHalfLength = WORLD_CONFIG.streetLength / 2
+  const streetHalfWidth = WORLD_CONFIG.streetWidth / 2
+  const giantGatePillarOffset = 3.35 * GIANT_GATE_SCALE
+  const giantGatePillarThickness = 0.7 * GIANT_GATE_SCALE
+
+  assert.equal(GIANT_GATE_POSITION[0], 0)
+  assert.ok(GIANT_GATE_POSITION[2] <= -streetHalfLength)
+  assert.ok(GIANT_GATE_POSITION[2] >= -streetHalfLength - 6)
+  assert.ok(GIANT_GATE_POSITION[2] < 0)
+  assert.ok(GIANT_GATE_POSITION[2] < GATE_POSITION[2])
+  assert.ok(giantGatePillarOffset > streetHalfWidth)
+  assert.equal(GIANT_GATE_SCALE, previousGiantGateScale * 2)
+  assert.equal(giantGatePillarThickness, previousPillarThickness * 2)
 })
 
 const hexToRgb = (hex) => {

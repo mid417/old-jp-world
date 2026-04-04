@@ -2,6 +2,8 @@ import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import {
   COLORS,
   GATE_POSITION,
+  GIANT_GATE_POSITION,
+  GIANT_GATE_SCALE,
   MACHIYA_BUILDINGS,
   MACHIYA_ROOF_PROFILES,
   OUTSKIRT_CROSS_ROAD_POSITIONS,
@@ -39,6 +41,7 @@ export function KyotoNightDistrict() {
       ))}
 
       <TempleGate position={GATE_POSITION} />
+      <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} />
       <PagodaTower position={PAGODA_POSITION} />
       <CanalDetails />
     </>
@@ -627,42 +630,60 @@ function LanternPost({ lantern }: { lantern: LanternConfig }) {
   )
 }
 
-function TempleGate({ position }: { position: Vector3Tuple }) {
+interface TempleGateProps {
+  position?: Vector3Tuple
+  scale?: number
+}
+
+function TempleGate({ position = [0, 0, 0], scale = 1 }: TempleGateProps) {
+  const pillarOffsetX = 3.35 * scale
+  const pillarHalfExtents: Vector3Tuple = [0.35 * scale, 2.9 * scale, 0.35 * scale]
+  const pillarSize: Vector3Tuple = [0.7 * scale, 5.8 * scale, 0.7 * scale]
+  const upperBeamPosition: Vector3Tuple = [0, 5.65 * scale, 0]
+  const upperBeamHalfExtents: Vector3Tuple = [4.4 * scale, 0.3 * scale, 0.6 * scale]
+  const upperBeamSize: Vector3Tuple = [8.8 * scale, 0.6 * scale, 1.2 * scale]
+  const topBeamPosition: Vector3Tuple = [0, 6.22 * scale, 0]
+  const topBeamSize: Vector3Tuple = [9.8 * scale, 0.18 * scale, 1.8 * scale]
+  const tieBeamPosition: Vector3Tuple = [0, 4.95 * scale, 0]
+  const tieBeamSize: Vector3Tuple = [6.9 * scale, 0.34 * scale, 0.9 * scale]
+  const lanternOffsetX = 2.2 * scale
+  const lanternHeight = 4.15 * scale
+
   return (
     <group position={position}>
       <RigidBody type="fixed" colliders={false}>
-        <CuboidCollider args={[0.35, 2.9, 0.35]} position={[-3.35, 2.9, 0]} />
-        <CuboidCollider args={[0.35, 2.9, 0.35]} position={[3.35, 2.9, 0]} />
-        <CuboidCollider args={[4.4, 0.3, 0.6]} position={[0, 5.65, 0]} />
+        <CuboidCollider args={pillarHalfExtents} position={[-pillarOffsetX, 2.9 * scale, 0]} />
+        <CuboidCollider args={pillarHalfExtents} position={[pillarOffsetX, 2.9 * scale, 0]} />
+        <CuboidCollider args={upperBeamHalfExtents} position={upperBeamPosition} />
 
-        <mesh position={[-3.35, 2.9, 0]} castShadow>
-          <boxGeometry args={[0.7, 5.8, 0.7]} />
+        <mesh position={[-pillarOffsetX, 2.9 * scale, 0]} castShadow>
+          <boxGeometry args={pillarSize} />
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
-        <mesh position={[3.35, 2.9, 0]} castShadow>
-          <boxGeometry args={[0.7, 5.8, 0.7]} />
+        <mesh position={[pillarOffsetX, 2.9 * scale, 0]} castShadow>
+          <boxGeometry args={pillarSize} />
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
-        <mesh position={[0, 5.65, 0]} castShadow>
-          <boxGeometry args={[8.8, 0.6, 1.2]} />
+        <mesh position={upperBeamPosition} castShadow>
+          <boxGeometry args={upperBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.8} />
         </mesh>
 
-        <mesh position={[0, 6.22, 0]} castShadow>
-          <boxGeometry args={[9.8, 0.18, 1.8]} />
+        <mesh position={topBeamPosition} castShadow>
+          <boxGeometry args={topBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
         </mesh>
 
-        <mesh position={[0, 4.95, 0]} castShadow>
-          <boxGeometry args={[6.9, 0.34, 0.9]} />
+        <mesh position={tieBeamPosition} castShadow>
+          <boxGeometry args={tieBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.8} />
         </mesh>
       </RigidBody>
 
-      <GateLantern position={[-2.2, 4.15, 0]} />
-      <GateLantern position={[2.2, 4.15, 0]} />
+      <GateLantern position={[-lanternOffsetX, lanternHeight, 0]} />
+      <GateLantern position={[lanternOffsetX, lanternHeight, 0]} />
     </group>
   )
 }
