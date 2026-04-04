@@ -3,6 +3,7 @@ import { NightSkybox } from './components/NightSkybox'
 import { KyotoNightDistrict } from './components/KyotoNightDistrict'
 import { LiveStage } from './components/LiveStage'
 import { GlowingFish } from './components/GlowingFish'
+import { TeleportPortal } from './components/TeleportPortal'
 import { COLORS, WORLD_CONFIG } from './constants'
 
 export interface WorldProps {
@@ -40,6 +41,22 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
 
         <GlowingFish />
+        {/* 小さい鳥居（GATE_POSITION付近）のポータル → 大きい鳥居南側へ */}
+        <TeleportPortal
+          id="tp-small-gate"
+          position={[0, 1.5, 66]}
+          destination={[0, 0.05, -90]}
+          yaw={180}
+          label="大鳥居へテレポート"
+        />
+        {/* 大きい鳥居（GIANT_GATE_POSITION付近）のポータル → 小さい鳥居北側へ */}
+        <TeleportPortal
+          id="tp-giant-gate"
+          position={[0, 1.5, -93]}
+          destination={[0, 0.05, 69]}
+          yaw={0}
+          label="小鳥居へテレポート"
+        />
         <KyotoNightDistrict />
         <LiveStage />
         {/* ライブステージ後方のVideoPlayer（Z=-110, Y=7に浮かせて配置） */}
