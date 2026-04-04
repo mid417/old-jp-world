@@ -1,4 +1,4 @@
-import { SpawnPoint } from '@xrift/world-components'
+import { SpawnPoint, VideoPlayer } from '@xrift/world-components'
 import { NightSkybox } from './components/NightSkybox'
 import { KyotoNightDistrict } from './components/KyotoNightDistrict'
 import { LiveStage } from './components/LiveStage'
@@ -26,10 +26,10 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         <directionalLight
           position={[18, 24, 10]}
           color={COLORS.lighting.moon}
-          intensity={0.82}
+          intensity={0.9}
           castShadow
-          shadow-mapSize-width={1024}
-          shadow-mapSize-height={1024}
+          shadow-mapSize-width={512}
+          shadow-mapSize-height={512}
           shadow-camera-near={1}
           shadow-camera-far={58}
           shadow-camera-left={-24}
@@ -42,6 +42,13 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         <GlowingFish />
         <KyotoNightDistrict />
         <LiveStage />
+        {/* ライブステージ後方のVideoPlayer（Z=-110, Y=7に浮かせて配置） */}
+        <VideoPlayer
+          id="live-stage-video"
+          url="https://example.com/live.mp4"
+          position={[0, 12, -110]}
+          width={20}
+        />
       </group>
     </>
   )
