@@ -1,6 +1,7 @@
 import { SpawnPoint } from '@xrift/world-components'
 import { NightSkybox } from './components/NightSkybox'
 import { KyotoNightDistrict } from './components/KyotoNightDistrict'
+import { GlowingFish } from './components/GlowingFish'
 import { COLORS, WORLD_CONFIG } from './constants'
 
 export interface WorldProps {
@@ -37,6 +38,7 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         />
         <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
 
+        <GlowingFish />
         <KyotoNightDistrict />
       </group>
     </>
