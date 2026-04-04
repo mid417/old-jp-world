@@ -9,6 +9,8 @@ import {
   OUTSKIRT_CROSS_ROAD_POSITIONS,
   OUTSKIRT_BUILDINGS,
   OUTSKIRT_SIDE_ROAD_POSITIONS,
+  INNER_SIDE_ROAD_POSITIONS,
+  INNER_CROSS_ROAD_POSITIONS,
   PAGODA_POSITION,
   STREET_LANTERNS,
   WORLD_DIMENSION_MULTIPLIER,
@@ -63,9 +65,12 @@ function OutskirtDistrict() {
 function OutskirtRoadGrid() {
   const [outerWestRoadX, innerWestRoadX, innerEastRoadX, outerEastRoadX] = OUTSKIRT_SIDE_ROAD_POSITIONS
   const [northRoadZ, southRoadZ] = OUTSKIRT_CROSS_ROAD_POSITIONS
+  const [innerWestCenterX, innerEastCenterX] = INNER_SIDE_ROAD_POSITIONS
+  const [innerNorthRoadZ, innerSouthRoadZ] = INNER_CROSS_ROAD_POSITIONS
 
   return (
     <>
+      {/* ── 既存の外周縦道路 ──────────────────────────────────────────────── */}
       <mesh position={[innerWestRoadX, 0.012, 0]}>
         <boxGeometry args={[7.2, 0.024, 118 * WORLD_DIMENSION_MULTIPLIER]} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.92} />
@@ -86,6 +91,7 @@ function OutskirtRoadGrid() {
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.94} />
       </mesh>
 
+      {/* ── 既存の外周横断道路 ───────────────────────────────────────────────── */}
       <mesh position={[0, 0.014, northRoadZ]}>
         <boxGeometry args={[102 * WORLD_DIMENSION_MULTIPLIER, 0.028, 8.2]} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.93} />
@@ -93,6 +99,28 @@ function OutskirtRoadGrid() {
 
       <mesh position={[0, 0.014, southRoadZ]}>
         <boxGeometry args={[102 * WORLD_DIMENSION_MULTIPLIER, 0.028, 8.2]} />
+        <meshStandardMaterial color={COLORS.ground.street} roughness={0.93} />
+      </mesh>
+
+      {/* ── 新規：内側縦道路（X=±54）──────────────────────────────────────── */}
+      <mesh position={[innerEastCenterX, 0.012, 0]}>
+        <boxGeometry args={[6.8, 0.024, 118 * WORLD_DIMENSION_MULTIPLIER]} />
+        <meshStandardMaterial color={COLORS.ground.street} roughness={0.92} />
+      </mesh>
+
+      <mesh position={[innerWestCenterX, 0.012, 0]}>
+        <boxGeometry args={[6.8, 0.024, 118 * WORLD_DIMENSION_MULTIPLIER]} />
+        <meshStandardMaterial color={COLORS.ground.street} roughness={0.92} />
+      </mesh>
+
+      {/* ── 新規：内側横断道路（Z=±81）──────────────────────────────────────── */}
+      <mesh position={[0, 0.014, innerNorthRoadZ]}>
+        <boxGeometry args={[102 * WORLD_DIMENSION_MULTIPLIER, 0.028, 7.6]} />
+        <meshStandardMaterial color={COLORS.ground.street} roughness={0.93} />
+      </mesh>
+
+      <mesh position={[0, 0.014, innerSouthRoadZ]}>
+        <boxGeometry args={[102 * WORLD_DIMENSION_MULTIPLIER, 0.028, 7.6]} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.93} />
       </mesh>
     </>

@@ -564,13 +564,55 @@ const createOutskirtCrossRow = (side: 'north' | 'south', z: number): OutskirtBui
   })
 }
 
+// ── 内側横断道路沿いの建物 X スロット（メイン通りと外側道路の中間帯を埋める）──────────
+const innerCrossXSlots = [-30, -14, 14, 30].map((slot) => slot * WORLD_DIMENSION_MULTIPLIER)
+
+// 内側横断道路（Z=±81）沿いの建物を生成するヘルパー
+const createInnerCrossRow = (side: 'north' | 'south', z: number): OutskirtBuildingConfig[] => {
+  const direction = side === 'north' ? Math.PI / 2 : -Math.PI / 2
+  const facing = side === 'north' ? -1 : 1
+
+  return innerCrossXSlots.map((x, index) => {
+    const profile = getCycledValue(outskirtCrossProfiles, index)
+    return {
+      name: `inner-cross-${side}-${index + 1}-z${Math.round(z)}`,
+      position: vector3(x + profile.offsetX, 0, z + facing * profile.offsetZ),
+      width: profile.width,
+      height: profile.height,
+      depth: profile.depth,
+      rotationY: direction + profile.rotationOffset * facing,
+      stories: profile.stories,
+    }
+  })
+}
+
+// ── 新しい内側道路の位置定数（KyotoNightDistrict で道路メッシュに使用）─────────────
+export const INNER_SIDE_ROAD_POSITIONS = [-18, 18].map((slot) => slot * WORLD_DIMENSION_MULTIPLIER)
+export const INNER_CROSS_ROAD_POSITIONS = [-27, 27].map((slot) => slot * WORLD_DIMENSION_MULTIPLIER)
+
 export const OUTSKIRT_BUILDINGS: OutskirtBuildingConfig[] = [
+  // ── 既存の外周道路沿い建物 ──────────────────────────────────────────────────────
   ...createOutskirtSideRow('east', 36 * WORLD_DIMENSION_MULTIPLIER),
   ...createOutskirtSideRow('east', 58 * WORLD_DIMENSION_MULTIPLIER),
   ...createOutskirtSideRow('west', -36 * WORLD_DIMENSION_MULTIPLIER),
   ...createOutskirtSideRow('west', -58 * WORLD_DIMENSION_MULTIPLIER),
   ...createOutskirtCrossRow('north', -54 * WORLD_DIMENSION_MULTIPLIER),
   ...createOutskirtCrossRow('south', 54 * WORLD_DIMENSION_MULTIPLIER),
+
+  // ── 内側縦道路（X=±54）沿い建物 ────────────────────────────────────────────────
+  ...createOutskirtSideRow('east', 18 * WORLD_DIMENSION_MULTIPLIER),
+  ...createOutskirtSideRow('west', -18 * WORLD_DIMENSION_MULTIPLIER),
+
+  // ── 内側横断道路（Z=±81）の北側・南側建物 ────────────────────────────────────────
+  ...createInnerCrossRow('north', -27 * WORLD_DIMENSION_MULTIPLIER),
+  ...createInnerCrossRow('south', 27 * WORLD_DIMENSION_MULTIPLIER),
+  // 各横断道路の反対側（道路の内側向き）にも建物を配置
+  ...createInnerCrossRow('south', -27 * WORLD_DIMENSION_MULTIPLIER),
+  ...createInnerCrossRow('north', 27 * WORLD_DIMENSION_MULTIPLIER),
+
+  // ── 既存外周横断道路の内側にも建物を追加（道路の裏面を埋める）────────────────────
+  ...createOutskirtCrossRow('south', -54 * WORLD_DIMENSION_MULTIPLIER),
+  ...createOutskirtCrossRow('north', 54 * WORLD_DIMENSION_MULTIPLIER),
 ]
 
 const lanternSlots = [
