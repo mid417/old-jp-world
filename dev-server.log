@@ -1,0 +1,14 @@
+
+> @xrift/japanese-world@0.1.0 dev
+> vite --host 0.0.0.0
+
+Port 5173 is in use, trying another one...
+Port 5174 is in use, trying another one...
+Port 5175 is in use, trying another one...
+Port 5176 is in use, trying another one...
+
+  VITE v7.3.1  ready in 2461 ms
+
+  ➜  Local:   http://localhost:5177/
+  ➜  Network: http://10.255.255.254:5177/
+  ➜  Network: http://172.27.55.232:5177/

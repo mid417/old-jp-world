@@ -1,0 +1,1 @@
+XRift 向けの WebXR ワールド実装。主な技術は TypeScript、React 19、React Three Fiber、Three.js、@react-three/rapier、@xrift/world-components、Vite Module Federation。主要構成は src/World.tsx、src/components/、src/constants.ts、tests/、public/。

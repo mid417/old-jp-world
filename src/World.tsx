@@ -1,7 +1,6 @@
-import { SpawnPoint, Skybox } from '@xrift/world-components'
-import { RigidBody } from '@react-three/rapier'
-import { useRef } from 'react'
-import { Mesh } from 'three'
+import { SpawnPoint } from '@xrift/world-components'
+import { NightSkybox } from './components/NightSkybox'
+import { KyotoNightDistrict } from './components/KyotoNightDistrict'
 import { COLORS, WORLD_CONFIG } from './constants'
 
 export interface WorldProps {
@@ -9,43 +8,37 @@ export interface WorldProps {
   scale?: number
 }
 
-export const World: React.FC<WorldProps> = ({ position = [0, 0, 0], scale = 1 }) => {
-  const groundRef = useRef<Mesh>(null)
-  const worldSize = WORLD_CONFIG.size * scale
-
+export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
   return (
-    <group position={position} scale={scale}>
-      {/* Skybox - 360度パノラマ背景 */}
-      <Skybox radius={500} />
+    <>
+      <fog attach="fog" args={[COLORS.sky.fog, 52, 150]} />
+      <group position={position} scale={scale}>
+        <NightSkybox />
+        <SpawnPoint position={WORLD_CONFIG.spawnPosition} yaw={WORLD_CONFIG.spawnYaw} />
 
-      {/* プレイヤーのスポーン地点 */}
-      <group position={[0.11, 0, 7.59]} rotation={[0, 0, 0]}>
-        <SpawnPoint />
+        <ambientLight color={COLORS.lighting.ambient} intensity={0.38} />
+        <hemisphereLight
+          args={[COLORS.lighting.moon, COLORS.lighting.groundBounce, 0.48]}
+          position={[0, 24, 0]}
+        />
+        <directionalLight
+          position={[18, 24, 10]}
+          color={COLORS.lighting.moon}
+          intensity={0.82}
+          castShadow
+          shadow-mapSize-width={1024}
+          shadow-mapSize-height={1024}
+          shadow-camera-near={1}
+          shadow-camera-far={58}
+          shadow-camera-left={-24}
+          shadow-camera-right={24}
+          shadow-camera-top={32}
+          shadow-camera-bottom={-32}
+        />
+        <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
+
+        <KyotoNightDistrict />
       </group>
-
-      {/* 照明設定 */}
-      <ambientLight intensity={0.3} />
-      <directionalLight
-        position={[5, 10, 5]}
-        intensity={1.5}
-        castShadow
-        shadow-mapSize-width={512}
-        shadow-mapSize-height={512}
-        shadow-camera-far={50}
-        shadow-camera-left={-15}
-        shadow-camera-right={15}
-        shadow-camera-top={15}
-        shadow-camera-bottom={-15}
-      />
-
-      {/* 地面 */}
-      <RigidBody type="fixed" colliders="cuboid" restitution={0} friction={0}>
-        <mesh ref={groundRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-          <planeGeometry args={[worldSize, worldSize]} />
-          <meshLambertMaterial color={COLORS.ground} />
-        </mesh>
-      </RigidBody>
-
-    </group>
+    </>
   )
 }

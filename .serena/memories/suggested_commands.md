@@ -1,0 +1,1 @@
+開発コマンド: npm run dev, npm run preview, npm run typecheck, npm test, npm run build。XRift CLI: xrift login, xrift create world <name>, xrift upload, xrift whoami, xrift logout。Linux 基本操作: ls, cd, rg, find, git。

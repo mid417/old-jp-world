@@ -1,0 +1,1 @@
+作業後は少なくとも npm test, npm run typecheck, npm run build を実行して回帰確認する。必要に応じて dev サーバーで見た目を確認する。Discord 通知フックがあれば完了前に .github/hooks/discord-notify.sh complete を実行する。

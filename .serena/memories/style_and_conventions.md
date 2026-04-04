@@ -1,0 +1,1 @@
+TypeScript + 関数コンポーネント中心。React/R3F 変更時は applying-react-coding-rules と xrift-world skill に従う。any や console.log を避け、必要最小限の receiveShadow/castShadow を使う。XRift ではアセット読込時に useXRift().baseUrl を使い、public/ 配下に置く。

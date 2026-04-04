@@ -19,7 +19,8 @@
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "node --experimental-transform-types --test tests/world-layout.test.mjs"
   },
   "peerDependencies": {
     "@react-three/drei": "^10.7.3",
