@@ -1,8 +1,8 @@
 {
   "world": {
     "distDir": "./dist",
-    "title": "Kyoto Night Alley",
-    "description": "京都の古い夜道をイメージした、暖色の行灯と町家が並ぶXRiftワールドです",
+    "title": "既視感のあるワールド",
+    "description": "",
     "thumbnailPath": "thumbnail.png",
     "buildCommand": "npm run build",
     "ignore": [

@@ -41,30 +41,36 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
 
         <GlowingFish />
+
         {/* 小さい鳥居（GATE_POSITION付近）のポータル → 大きい鳥居南側へ */}
         <TeleportPortal
           id="tp-small-gate"
           position={[0, 1.5, 66]}
-          destination={[0, 0.05, -90]}
-          yaw={180}
+          destination={[0, 0.05, -65]}
+          yaw={0}
           label="大鳥居へテレポート"
         />
         {/* 大きい鳥居（GIANT_GATE_POSITION付近）のポータル → 小さい鳥居北側へ */}
         <TeleportPortal
           id="tp-giant-gate"
-          position={[0, 1.5, -93]}
+          position={[0, 1.5, -60]}
           destination={[0, 0.05, 69]}
           yaw={0}
           label="小鳥居へテレポート"
         />
+
         <KyotoNightDistrict />
+
         <LiveStage />
-        {/* ライブステージ後方のVideoPlayer（Z=-110, Y=7に浮かせて配置） */}
+
+        {/* ライブステージ後方のVideoPlayer（Z=-110, Y=12に浮かせて配置） */}
         <VideoPlayer
           id="live-stage-video"
-          url="https://example.com/live.mp4"
           position={[0, 12, -110]}
           width={20}
+          url='https://commondatastorage.googleapis.com/gtv-videos-bucket/sample/BigBuckBunny.mp4'
+          playing
+          volume={0.5}
         />
       </group>
     </>

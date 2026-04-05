@@ -2,7 +2,7 @@ import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 
-const FISH_COUNT_PER_COLOR = 150
+const FISH_COUNT_PER_COLOR = 100
 
 const FISH_COLORS = [
   '#ff4466', // ピンク
