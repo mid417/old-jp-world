@@ -1,6 +1,16 @@
 import { useRef, useMemo, useEffect } from 'react'
 import { useFrame } from '@react-three/fiber'
-import * as THREE from 'three'
+import {
+  BufferGeometry,
+  BufferAttribute,
+  Matrix4,
+  Vector3,
+  Euler,
+  InstancedMesh,
+  Color,
+  ShaderMaterial,
+  DoubleSide,
+} from 'three'
 
 const FISH_COUNT_PER_COLOR = 100
 
@@ -44,8 +54,8 @@ const fragmentShader = `
   }
 `
 
-function createFishGeometry(): THREE.BufferGeometry {
-  const geometry = new THREE.BufferGeometry()
+function createFishGeometry(): BufferGeometry {
+  const geometry = new BufferGeometry()
 
   // Body key vertices
   const nose: number[] = [0, 0, 0.3]
@@ -73,28 +83,28 @@ function createFishGeometry(): THREE.BufferGeometry {
     ...tailBase, ...tailLeft, ...tailRight,
   ])
 
-  geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3))
+  geometry.setAttribute('position', new BufferAttribute(positions, 3))
   geometry.computeVertexNormals()
 
   return geometry
 }
 
 export function GlowingFish() {
-  const meshRefs = useRef<Array<THREE.InstancedMesh | null>>(
+  const meshRefs = useRef<Array<InstancedMesh | null>>(
     FISH_COLORS.map(() => null),
   )
 
   // Reusable objects — avoid allocations in useFrame
-  const matrixWS = useRef(new THREE.Matrix4())
-  const posWS = useRef(new THREE.Vector3())
-  const eulerWS = useRef(new THREE.Euler())
+  const matrixWS = useRef(new Matrix4())
+  const posWS = useRef(new Vector3())
+  const eulerWS = useRef(new Euler())
 
   const fishGeometry = useMemo(() => createFishGeometry(), [])
 
   const uniformsArray = useMemo(
     () =>
       FISH_COLORS.map((colorHex) => ({
-        color: { value: new THREE.Color(colorHex) },
+        color: { value: new Color(colorHex) },
         time: { value: 0 },
       })),
     [],
@@ -104,11 +114,11 @@ export function GlowingFish() {
     () =>
       uniformsArray.map(
         (uniforms) =>
-          new THREE.ShaderMaterial({
+          new ShaderMaterial({
             uniforms,
             vertexShader,
             fragmentShader,
-            side: THREE.DoubleSide,
+            side: DoubleSide,
           }),
       ),
     [uniformsArray],
@@ -124,7 +134,7 @@ export function GlowingFish() {
   const refCallbacks = useMemo(
     () =>
       FISH_COLORS.map(
-        (_, ci) => (el: THREE.InstancedMesh | null) => {
+        (_, ci) => (el: InstancedMesh | null) => {
           meshRefs.current[ci] = el
         },
       ),

@@ -1,3 +1,4 @@
+import { memo, useMemo } from 'react'
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import {
   COLORS,
@@ -281,7 +282,7 @@ function GroundPlane() {
   )
 }
 
-function MachiyaBlock({ building }: { building: MachiyaConfig }) {
+const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: MachiyaConfig }) {
   const { depth, facing, height, position, stories, width } = building
   const bodyMetrics = getMachiyaBodyMetrics(building)
   const { lowerFloorHeight, upperDepth, upperFloorHeight, upperWidth } = bodyMetrics
@@ -292,8 +293,14 @@ function MachiyaBlock({ building }: { building: MachiyaConfig }) {
   const upperScreenX = frontX + facing * 0.2
   const upperSlatX = frontX + facing * 0.26
   const windowTop = stories === 2 ? lowerFloorHeight + upperFloorHeight * 0.56 : lowerFloorHeight * 0.8
-  const lowerSlatPositions = Array.from({ length: 5 }, (_, index) => -depth * 0.28 + index * (depth * 0.14))
-  const upperSlatPositions = Array.from({ length: 4 }, (_, index) => -depth * 0.21 + index * (depth * 0.14))
+  const lowerSlatPositions = useMemo(
+    () => Array.from({ length: 5 }, (_, index) => -depth * 0.28 + index * (depth * 0.14)),
+    [depth],
+  )
+  const upperSlatPositions = useMemo(
+    () => Array.from({ length: 4 }, (_, index) => -depth * 0.21 + index * (depth * 0.14)),
+    [depth],
+  )
   const colliderSections = getMachiyaColliderSections(building)
   const canopyWidth = depth * (stories === 2 ? 0.72 : 0.64)
   const lanternZ = building.signStyle === 'vertical' ? -0.95 : 0.9
@@ -320,12 +327,12 @@ function MachiyaBlock({ building }: { building: MachiyaConfig }) {
           <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.94} />
         </mesh>
 
-        <mesh position={[0, 1.06, 0]} castShadow>
+        <mesh position={[0, 1.06, 0]}>
           <boxGeometry args={[width + 0.12, 0.2, depth + 0.14]} />
           <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.88} />
         </mesh>
 
-        <mesh position={[0, lowerFloorHeight + 0.08, 0]} castShadow>
+        <mesh position={[0, lowerFloorHeight + 0.08, 0]}>
           <boxGeometry args={[width + 0.42, 0.14, depth + 0.54]} />
           <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
         </mesh>
@@ -337,7 +344,7 @@ function MachiyaBlock({ building }: { building: MachiyaConfig }) {
               <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
             </mesh>
 
-            <mesh position={[0, lowerFloorHeight + upperFloorHeight + 0.08, 0]} castShadow>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight + 0.08, 0]}>
               <boxGeometry args={[upperWidth + 0.32, 0.14, upperDepth + 0.3]} />
               <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.84} />
             </mesh>
@@ -452,7 +459,7 @@ function MachiyaBlock({ building }: { building: MachiyaConfig }) {
       </RigidBody>
     </group>
   )
-}
+})
 
 function MachiyaRoof({ building }: { building: Pick<MachiyaConfig, 'stories' | 'width' | 'height' | 'depth'> }) {
   const roofProfile = MACHIYA_ROOF_PROFILES[building.stories]
@@ -559,7 +566,7 @@ function RoofEave({
   )
 }
 
-function OutskirtBuilding({ building }: { building: OutskirtBuildingConfig }) {
+const OutskirtBuilding = memo(function OutskirtBuilding({ building }: { building: OutskirtBuildingConfig }) {
   const bodyMetrics = getOutskirtBodyMetrics(building)
   const roofGeometry = getOutskirtRoofGeometry(building)
 
@@ -622,9 +629,9 @@ function OutskirtBuilding({ building }: { building: OutskirtBuildingConfig }) {
       </mesh>
     </group>
   )
-}
+})
 
-function LanternPost({ lantern }: { lantern: LanternConfig }) {
+const LanternPost = memo(function LanternPost({ lantern }: { lantern: LanternConfig }) {
   return (
     <group position={lantern.position}>
       <mesh position={[0, lantern.height / 2, 0]} castShadow>
@@ -632,7 +639,7 @@ function LanternPost({ lantern }: { lantern: LanternConfig }) {
         <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.86} />
       </mesh>
 
-      <mesh position={[0, lantern.height + 0.12, 0]} castShadow>
+      <mesh position={[0, lantern.height + 0.12, 0]}>
         <boxGeometry args={[0.85, 0.08, 0.08]} />
         <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
       </mesh>
@@ -656,7 +663,7 @@ function LanternPost({ lantern }: { lantern: LanternConfig }) {
       />
     </group>
   )
-}
+})
 
 interface TempleGateProps {
   position?: Vector3Tuple
@@ -664,7 +671,7 @@ interface TempleGateProps {
   variant?: 'standard' | 'grand'
 }
 
-function TempleGate({ position = [0, 0, 0], scale = 1, variant = 'standard' }: TempleGateProps) {
+const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, variant = 'standard' }: TempleGateProps) {
   const isGrand = variant === 'grand'
   const pillarOffsetX = 3.35 * scale
   const pillarHeight = (isGrand ? 6.1 : 5.8) * scale
@@ -783,12 +790,12 @@ function TempleGate({ position = [0, 0, 0], scale = 1, variant = 'standard' }: T
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
             </mesh>
 
-            <mesh position={gakuzukaPosition} castShadow>
+            <mesh position={gakuzukaPosition}>
               <boxGeometry args={gakuzukaSize} />
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.8} />
             </mesh>
 
-            <mesh position={plaquePosition} castShadow>
+            <mesh position={plaquePosition}>
               <boxGeometry args={plaqueSize} />
               <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.7} />
             </mesh>
@@ -805,7 +812,7 @@ function TempleGate({ position = [0, 0, 0], scale = 1, variant = 'standard' }: T
       <GateLantern position={[lanternOffsetX, lanternHeight, 0]} />
     </group>
   )
-}
+})
 
 function GateLantern({ position }: { position: Vector3Tuple }) {
   return (
@@ -824,16 +831,23 @@ function GateLantern({ position }: { position: Vector3Tuple }) {
   )
 }
 
-function PagodaTower({ position }: { position: Vector3Tuple }) {
-  const tiers = [
+const PAGODA_TIERS = (() => {
+  const rawTiers = [
     { bodyWidth: 3.9, bodyDepth: 3.9, bodyHeight: 1.7, roofWidth: 6.4, roofDepth: 6.4 },
     { bodyWidth: 3.2, bodyDepth: 3.2, bodyHeight: 1.45, roofWidth: 5.5, roofDepth: 5.5 },
     { bodyWidth: 2.6, bodyDepth: 2.6, bodyHeight: 1.2, roofWidth: 4.6, roofDepth: 4.6 },
     { bodyWidth: 2, bodyDepth: 2, bodyHeight: 1, roofWidth: 3.7, roofDepth: 3.7 },
   ] as const
+  let y = 1.05
+  return rawTiers.map((tier) => {
+    const bodyCenterY = y + tier.bodyHeight / 2
+    const roofY = y + tier.bodyHeight + 0.2
+    y += tier.bodyHeight + 1.1
+    return { ...tier, bodyCenterY, roofY }
+  })
+})()
 
-  let tierY = 1.05
-
+const PagodaTower = memo(function PagodaTower({ position }: { position: Vector3Tuple }) {
   return (
     <group position={position}>
       <RigidBody type="fixed" colliders={false}>
@@ -844,10 +858,8 @@ function PagodaTower({ position }: { position: Vector3Tuple }) {
           <meshStandardMaterial color={COLORS.stone} roughness={0.9} />
         </mesh>
 
-        {tiers.map((tier, index) => {
-          const bodyCenterY = tierY + tier.bodyHeight / 2
-          const roofY = tierY + tier.bodyHeight + 0.2
-          tierY += tier.bodyHeight + 1.1
+        {PAGODA_TIERS.map((tier, index) => {
+          const { bodyCenterY, roofY } = tier
 
           return (
             <group key={`pagoda-tier-${index}`}>
@@ -859,7 +871,7 @@ function PagodaTower({ position }: { position: Vector3Tuple }) {
                 <boxGeometry args={[tier.roofWidth, 0.18, tier.roofDepth]} />
                 <meshStandardMaterial color={COLORS.pagoda.roof} roughness={0.78} />
               </mesh>
-              <mesh position={[0, roofY + 0.18, 0]} castShadow>
+              <mesh position={[0, roofY + 0.18, 0]}>
                 <boxGeometry args={[tier.roofWidth * 0.78, 0.14, tier.roofDepth * 0.78]} />
                 <meshStandardMaterial color={COLORS.pagoda.roof} roughness={0.8} />
               </mesh>
@@ -872,7 +884,7 @@ function PagodaTower({ position }: { position: Vector3Tuple }) {
           <meshStandardMaterial color={COLORS.pagoda.finial} metalness={0.08} roughness={0.52} />
         </mesh>
 
-        <mesh position={[0, 11.65, 0]} castShadow>
+        <mesh position={[0, 11.65, 0]}>
           <sphereGeometry args={[0.18, 12, 12]} />
           <meshStandardMaterial color={COLORS.pagoda.finial} metalness={0.08} roughness={0.48} />
         </mesh>
@@ -887,7 +899,7 @@ function PagodaTower({ position }: { position: Vector3Tuple }) {
       />
     </group>
   )
-}
+})
 
 function CanalDetails() {
   return (
@@ -900,7 +912,7 @@ function CanalDetails() {
   )
 }
 
-function StoneLantern({ position }: { position: Vector3Tuple }) {
+const StoneLantern = memo(function StoneLantern({ position }: { position: Vector3Tuple }) {
   return (
     <group position={position}>
       <mesh position={[0, 0.45, 0]}>
@@ -922,4 +934,4 @@ function StoneLantern({ position }: { position: Vector3Tuple }) {
       </mesh>
     </group>
   )
-}
+})
