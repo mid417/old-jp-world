@@ -1,138 +1,122 @@
-# XRift World Template
+# 既視感のあるワールド
 
-XRiftで動作するWebXRワールドを作成するための公式テンプレートです。
+![サムネイル](public/thumbnail.png)
+
+![XRift World](https://img.shields.io/badge/XRift-World-blue)
+![React Three Fiber](https://img.shields.io/badge/React_Three_Fiber-orange)
+![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 概要
 
-このテンプレートは、XRift CLIで新しいワールドプロジェクトを作成する際に使用されます。React Three Fiber、Rapier物理エンジン、Three.jsを使用した3Dワールドの基本構成がセットアップ済みで、すぐに開発を始められます。
+`既視感のあるワールド` は、XRift プラットフォーム向けに制作された和風ナイトシーンの WebXR ワールドです。京都の夜景を思わせる町家の街並み、灯籠、鳥居、五重塔を軸に、ライブステージ、発光する魚、空中ビデオスクリーン、鳥居間テレポートを組み合わせた回遊型の空間になっています。
 
-## このテンプレートに含まれる機能
+## 特徴
 
-- **React Three Fiber**: Reactコンポーネントとして3Dシーンを構築
-- **Rapier物理エンジン**: リアルな物理演算（衝突判定、重力など）
-- **Three.js**: WebGLベースの3Dグラフィックス
-- **Module Federation**: XRiftプラットフォームでの動的読み込み対応（`three/addons` を shared 依存として利用可能）
-- **TypeScript**: 型安全な開発環境
-- **サンプルワールド**: 物理演算やオブジェクト配置の実装例
+- 京都風の夜景街区と広い道路網で構成された和風ワールド
+- 小鳥居と大鳥居を行き来できるテレポートポータル
+- ライブステージと空中配置の `VideoPlayer`
+- 夜空を泳ぐ発光する魚のビジュアル演出
+- レイアウト崩れを防ぐテスト付きの構成
 
-## 使い方
+## 技術スタック
 
-### 1. XRift CLIをインストール
+- React 19
+- TypeScript 5
+- Vite 7
+- `@react-three/fiber`
+- `@react-three/drei`
+- `@react-three/rapier`
+- `three`
+- `@xrift/world-components`
 
-```bash
-npm install -g @xrift/cli
-```
+正確な依存関係とバージョンは [package.json](package.json) を参照してください。
 
-### 2. XRiftにログイン
-
-```bash
-xrift login
-```
-
-### 3. 新しいワールドプロジェクトを作成
+## セットアップ
 
 ```bash
-xrift create world my-world
-```
-
-### 4. 開発サーバーを起動
-
-```bash
-cd my-world
 npm install
 npm run dev
 ```
 
-ブラウザで http://localhost:5173 を開くと、一人称視点でワールドを確認できます。
-
-| 操作 | キー |
-|------|------|
-| 視点操作 | 画面クリックでマウスロック → マウス移動 |
-| 移動 | W / A / S / D |
-| 上昇 / 下降 | E・Space / Q |
-| インタラクト | 照準を合わせてクリック |
-| マウスロック解除 | ESC |
-
-### 5. ビルド
-
-```bash
-npm run build
-```
+開発サーバーは `http://localhost:5173` で起動します。
 
 ## 開発コマンド
 
 ```bash
-# 開発サーバー起動（ホットリロード有効）
+# 開発サーバー
 npm run dev
 
-# プロダクションビルド
+# 型チェック
+npm run typecheck
+
+# レイアウトテスト
+npm test
+
+# 本番ビルド
 npm run build
 
 # ビルド結果のプレビュー
 npm run preview
-
-# TypeScript型チェック
-npm run typecheck
 ```
 
-## 物理設定（physics）
+XRift へアップロードする場合は、必要に応じて `xrift login` を行ったうえで `xrift upload` を実行してください。
 
-xrift.jsonの`world.physics`セクションでワールドの物理動作をカスタマイズできます。
+## ワールド構成
 
-| 設定 | 型 | デフォルト | 説明 |
-|------|-----|---------|------|
-| `gravity` | number | 9.81 | 重力の強さ |
-| `allowInfiniteJump` | boolean | true | 無限ジャンプを許可するか |
+- [src/World.tsx](src/World.tsx)
+  - フォグ、ライティング、スポーン地点、テレポートポータル、ライブステージ背面の動画スクリーンを配置
+- [src/components/KyotoNightDistrict.tsx](src/components/KyotoNightDistrict.tsx)
+  - 地面、町家、郊外建物、灯籠、鳥居、五重塔など街区全体を構成
+- [src/components/NightSkybox.tsx](src/components/NightSkybox.tsx)
+  - 夜空の見た目を担当
+- [src/components/LiveStage/index.tsx](src/components/LiveStage/index.tsx)
+  - ステージエリアを構成
+- [src/components/GlowingFish/index.tsx](src/components/GlowingFish/index.tsx)
+  - 夜空を回遊する発光魚の演出
+- [src/components/TeleportPortal/index.tsx](src/components/TeleportPortal/index.tsx)
+  - ポータル表示とテレポート処理
+- [src/constants.ts](src/constants.ts)
+  - 配色、座標、建物配置、街路寸法などの定義
 
-### 例：アスレチックワールド（無限ジャンプ禁止）
+## テスト
 
-```json
-{
-  "world": {
-    "physics": {
-      "allowInfiniteJump": false
-    }
-  }
-}
+- [tests/world-layout.test.mjs](tests/world-layout.test.mjs)
+  - スポーン位置、街路幅、町家の並び、ランドマーク配置、夜景カラー、空の描画方針などを検証
+
+## アセット
+
+- サムネイル: `public/thumbnail.png`
+- ステージ映像: `src/World.tsx` 内で外部動画 URL を指定
+
+## ディレクトリ構成
+
+```text
+japanese-world/
+├── public/
+│   └── thumbnail.png
+├── src/
+│   ├── components/
+│   │   ├── GlowingFish/
+│   │   ├── LiveStage/
+│   │   ├── TeleportPortal/
+│   │   ├── KyotoNightDistrict.tsx
+│   │   └── NightSkybox.tsx
+│   ├── World.tsx
+│   ├── constants.ts
+│   ├── dev.tsx
+│   └── index.tsx
+├── tests/
+│   └── world-layout.test.mjs
+├── package.json
+├── vite.config.ts
+└── xrift.json
 ```
 
-### 例：低重力ワールド
+## 開発メモ
 
-```json
-{
-  "world": {
-    "physics": {
-      "gravity": 3.0
-    }
-  }
-}
-```
-
-## AI Agent Skills
-
-AIコーディングエージェントを使ってワールドを制作する場合、以下のコマンドでXRiftワールド制作に必要な情報をエージェントに取り込めます。
-
-```bash
-npx skills add WebXR-JP/xrift-skills
-```
-
-対応エージェント: Claude Code, Cursor, Copilot, Codex 等（40以上）
-
-## ドキュメント
-
-ワールド開発の詳細（アセットの読み込み、SpawnPoint、Interactable、useInstanceStateなど）については、公式ドキュメントをご覧ください。
-
-**[docs.xrift.net](https://docs.xrift.net)**
-
-## 関連リンク
-
-- [xrift-world-components](https://github.com/WebXR-JP/xrift-world-components) - ワールド開発用コンポーネントライブラリ
-- [xrift-cli](https://github.com/WebXR-JP/xrift-cli) - XRift CLI
-- [XRift](https://xrift.net) - XRiftプラットフォーム
-
-## サポート
-
-- Issues: [GitHub Issues](https://github.com/WebXR-JP/xrift-world-template/issues)
+- アセットを追加する場合は `public/` に配置してください
+- アセット読み込み時は `useXRift()` から取得した `baseUrl` を使い、`${baseUrl}path` の形式で結合してください
+- `xrift.json` では重力 `9.81`、無限ジャンプ許可 `true` が設定されています
 
 ## ライセンス
 
