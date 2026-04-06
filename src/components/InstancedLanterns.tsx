@@ -4,6 +4,14 @@ import type { InstancedMesh } from 'three'
 import { COLORS, STREET_LANTERNS, DETAIL_DISTRICT_RADIUS, type LanternConfig } from '../constants'
 import { useDistanceVisible } from '../hooks/useLodLevel'
 
+function updateInstancedMeshBounds(mesh: InstancedMesh | null) {
+  if (!mesh) return
+
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.computeBoundingBox()
+  mesh.computeBoundingSphere()
+}
+
 export function InstancedLanterns() {
   const count = STREET_LANTERNS.length
 
@@ -48,9 +56,9 @@ export function InstancedLanterns() {
       bodyRef.current?.setMatrixAt(i, dummy.matrix)
     }
 
-    if (poleRef.current) poleRef.current.instanceMatrix.needsUpdate = true
-    if (crossbarRef.current) crossbarRef.current.instanceMatrix.needsUpdate = true
-    if (bodyRef.current) bodyRef.current.instanceMatrix.needsUpdate = true
+    updateInstancedMeshBounds(poleRef.current)
+    updateInstancedMeshBounds(crossbarRef.current)
+    updateInstancedMeshBounds(bodyRef.current)
   }, [count])
 
   useEffect(() => {

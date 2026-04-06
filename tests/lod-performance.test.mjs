@@ -129,6 +129,8 @@ test('InstancedLanterns replaces individual LanternPost components', () => {
   assert.match(lanternSource, /instancedMesh/)
   assert.match(lanternSource, /Object3D/)
   assert.match(lanternSource, /setMatrixAt/)
+  assert.match(lanternSource, /computeBoundingBox/)
+  assert.match(lanternSource, /computeBoundingSphere/)
   // Distance-based pointLight
   assert.match(lanternSource, /useDistanceVisible/)
   assert.match(lanternSource, /pointLight/)
@@ -152,6 +154,8 @@ test('InstancedOutskirtBuildings replaces individual OutskirtBuilding components
   assert.match(outskirtSource, /Object3D/)
   assert.match(outskirtSource, /setMatrixAt/)
   assert.match(outskirtSource, /updateMatrixWorld/)
+  assert.match(outskirtSource, /computeBoundingBox/)
+  assert.match(outskirtSource, /computeBoundingSphere/)
   // Must instance wall meshes
   assert.match(outskirtSource, /plasterMat/)
   assert.match(outskirtSource, /roofMat/)

@@ -8,6 +8,14 @@ import {
   getOutskirtRoofGeometry,
 } from '../constants'
 
+function updateInstancedMeshBounds(mesh: InstancedMesh | null) {
+  if (!mesh) return
+
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.computeBoundingBox()
+  mesh.computeBoundingSphere()
+}
+
 export function InstancedOutskirtBuildings() {
   const buildingCount = OUTSKIRT_BUILDINGS.length
 
@@ -133,11 +141,11 @@ export function InstancedOutskirtBuildings() {
       ridgeRef.current?.setMatrixAt(ridgeIdx++, childNode.matrixWorld)
     }
 
-    if (wallRef.current) wallRef.current.instanceMatrix.needsUpdate = true
-    if (trimRef.current) trimRef.current.instanceMatrix.needsUpdate = true
-    if (windowRef.current) windowRef.current.instanceMatrix.needsUpdate = true
-    if (roofRef.current) roofRef.current.instanceMatrix.needsUpdate = true
-    if (ridgeRef.current) ridgeRef.current.instanceMatrix.needsUpdate = true
+    updateInstancedMeshBounds(wallRef.current)
+    updateInstancedMeshBounds(trimRef.current)
+    updateInstancedMeshBounds(windowRef.current)
+    updateInstancedMeshBounds(roofRef.current)
+    updateInstancedMeshBounds(ridgeRef.current)
   }, [metrics])
 
   useEffect(() => {
