@@ -2,63 +2,66 @@ import { memo, useMemo } from 'react'
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import {
   COLORS,
+  DETAIL_DISTRICT_RADIUS,
   GATE_POSITION,
   GIANT_GATE_POSITION,
   GIANT_GATE_SCALE,
   MACHIYA_BUILDINGS,
   MACHIYA_ROOF_PROFILES,
   OUTSKIRT_CROSS_ROAD_POSITIONS,
-  OUTSKIRT_BUILDINGS,
   OUTSKIRT_SIDE_ROAD_POSITIONS,
   INNER_SIDE_ROAD_POSITIONS,
   INNER_CROSS_ROAD_POSITIONS,
   PAGODA_POSITION,
-  STREET_LANTERNS,
   WORLD_DIMENSION_MULTIPLIER,
   getMachiyaColliderSections,
-  getOutskirtBodyMetrics,
-  getOutskirtRoofGeometry,
   getMachiyaBodyMetrics,
   getMachiyaRoofGeometry,
-  type LanternConfig,
   type MachiyaConfig,
-  type OutskirtBuildingConfig,
   type Vector3Tuple,
   WORLD_CONFIG,
 } from '../constants'
+import { useLodLevel, useDistanceVisible } from '../hooks/useLodLevel'
+import { ChunkManager } from './ChunkManager'
+import { InstancedLanterns } from './InstancedLanterns'
+import { InstancedOutskirtBuildings } from './InstancedOutskirtBuildings'
 
 export function KyotoNightDistrict() {
+  const chunkItems = useMemo(
+    () => [
+      ...MACHIYA_BUILDINGS.map((building) => ({
+        key: building.name,
+        position: building.position,
+        element: <MachiyaBlock building={building} />,
+      })),
+      {
+        key: 'gate',
+        position: GATE_POSITION,
+        element: <TempleGate position={GATE_POSITION} />,
+      },
+      {
+        key: 'giant-gate',
+        position: GIANT_GATE_POSITION,
+        element: <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} variant="grand" />,
+      },
+      {
+        key: 'pagoda',
+        position: PAGODA_POSITION,
+        element: <PagodaTower position={PAGODA_POSITION} />,
+      },
+    ],
+    [],
+  )
+
   return (
     <>
       <GroundPlane />
       <NearDistrictGroundDetails />
-
-      {MACHIYA_BUILDINGS.map((building) => (
-        <MachiyaBlock key={building.name} building={building} />
-      ))}
-
-      <OutskirtDistrict />
-
-      {STREET_LANTERNS.map((lantern) => (
-        <LanternPost key={lantern.name} lantern={lantern} />
-      ))}
-
-      <TempleGate position={GATE_POSITION} />
-      <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} variant="grand" />
-      <PagodaTower position={PAGODA_POSITION} />
-      <CanalDetails />
-    </>
-  )
-}
-
-function OutskirtDistrict() {
-  return (
-    <>
+      <ChunkManager items={chunkItems} />
       <OutskirtRoadGrid />
-
-      {OUTSKIRT_BUILDINGS.map((building) => (
-        <OutskirtBuilding key={building.name} building={building} />
-      ))}
+      <InstancedOutskirtBuildings />
+      <InstancedLanterns />
+      <CanalDetails />
     </>
   )
 }
@@ -135,72 +138,79 @@ function getMachiyaFacadeX(building: Pick<MachiyaConfig, 'width' | 'facing'>) {
 function NearDistrictGroundDetails() {
   return (
     <>
-      {MACHIYA_BUILDINGS.map((building) => {
-        const sideDirection = building.position[0] >= 0 ? 1 : -1
-        const facadeWorldX = building.position[0] + getMachiyaFacadeX(building)
-        const alleyCenterX = facadeWorldX + sideDirection * 1.6
-        const lotCenterX = building.position[0] + sideDirection * (building.width / 2 + building.lotWidth / 2 + 0.9)
-        const lotCenterZ = building.position[2] + building.lotOffsetZ
-        const lotFenceX = -sideDirection * (building.lotWidth / 2 - 0.08)
-
-        return (
-          <group key={`${building.name}-ground-details`}>
-            {building.alleyWidth > 0 ? (
-              <group position={[alleyCenterX, 0, building.position[2]]}>
-                <mesh position={[0, 0.03, 0]} receiveShadow>
-                  <boxGeometry args={[4.4, 0.05, building.alleyWidth]} />
-                  <meshStandardMaterial color={COLORS.ground.street} roughness={0.94} />
-                </mesh>
-                <mesh position={[0.2 * sideDirection, 0.045, 0]} receiveShadow>
-                  <boxGeometry args={[3.5, 0.03, Math.max(building.alleyWidth - 0.22, 0.42)]} />
-                  <meshStandardMaterial color={COLORS.ground.drain} roughness={0.88} />
-                </mesh>
-              </group>
-            ) : null}
-
-            {building.lotKind !== 'none' ? (
-              <group position={[lotCenterX, 0, lotCenterZ]}>
-                <mesh position={[0, 0.03, 0]} receiveShadow>
-                  <boxGeometry args={[building.lotWidth, 0.05, building.lotDepth]} />
-                  <meshStandardMaterial
-                    color={building.lotKind === 'gravel' ? COLORS.ground.stone : COLORS.ground.base}
-                    roughness={0.96}
-                  />
-                </mesh>
-                <mesh position={[lotFenceX, 0.16, 0]} receiveShadow>
-                  <boxGeometry args={[0.08, 0.26, building.lotDepth * 0.84]} />
-                  <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.84} />
-                </mesh>
-
-                {building.lotKind === 'garden' ? (
-                  <>
-                    <mesh position={[0.55 * sideDirection, 0.13, -building.lotDepth * 0.18]} receiveShadow>
-                      <boxGeometry args={[building.lotWidth * 0.34, 0.18, building.lotDepth * 0.26]} />
-                      <meshStandardMaterial color={COLORS.foliage} roughness={1} />
-                    </mesh>
-                    <mesh position={[-0.3 * sideDirection, 0.12, building.lotDepth * 0.22]} receiveShadow>
-                      <boxGeometry args={[building.lotWidth * 0.24, 0.16, building.lotDepth * 0.22]} />
-                      <meshStandardMaterial color={COLORS.foliage} roughness={1} />
-                    </mesh>
-                  </>
-                ) : (
-                  <>
-                    <mesh position={[0.32 * sideDirection, 0.08, -building.lotDepth * 0.16]} receiveShadow>
-                      <boxGeometry args={[0.42, 0.14, 0.56]} />
-                      <meshStandardMaterial color={COLORS.stone} roughness={0.9} />
-                    </mesh>
-                    <mesh position={[-0.44 * sideDirection, 0.06, building.lotDepth * 0.12]} receiveShadow>
-                      <boxGeometry args={[0.32, 0.1, 0.42]} />
-                      <meshStandardMaterial color={COLORS.stone} roughness={0.92} />
-                    </mesh>
-                  </>
-                )}
-              </group>
-            ) : null}
-          </group>
-        )
-      })}
+      {MACHIYA_BUILDINGS.map((building) => (
+        <BuildingGroundDetail key={`${building.name}-ground-details`} building={building} />
+      ))}
     </>
+  )
+}
+
+function BuildingGroundDetail({ building }: { building: MachiyaConfig }) {
+  const visible = useDistanceVisible(building.position, DETAIL_DISTRICT_RADIUS)
+  if (!visible) return null
+
+  const sideDirection = building.position[0] >= 0 ? 1 : -1
+  const facadeWorldX = building.position[0] + getMachiyaFacadeX(building)
+  const alleyCenterX = facadeWorldX + sideDirection * 1.6
+  const lotCenterX = building.position[0] + sideDirection * (building.width / 2 + building.lotWidth / 2 + 0.9)
+  const lotCenterZ = building.position[2] + building.lotOffsetZ
+  const lotFenceX = -sideDirection * (building.lotWidth / 2 - 0.08)
+
+  return (
+    <group>
+      {building.alleyWidth > 0 ? (
+        <group position={[alleyCenterX, 0, building.position[2]]}>
+          <mesh position={[0, 0.03, 0]}>
+            <boxGeometry args={[4.4, 0.05, building.alleyWidth]} />
+            <meshStandardMaterial color={COLORS.ground.street} roughness={0.94} />
+          </mesh>
+          <mesh position={[0.2 * sideDirection, 0.045, 0]}>
+            <boxGeometry args={[3.5, 0.03, Math.max(building.alleyWidth - 0.22, 0.42)]} />
+            <meshStandardMaterial color={COLORS.ground.drain} roughness={0.88} />
+          </mesh>
+        </group>
+      ) : null}
+
+      {building.lotKind !== 'none' ? (
+        <group position={[lotCenterX, 0, lotCenterZ]}>
+          <mesh position={[0, 0.03, 0]}>
+            <boxGeometry args={[building.lotWidth, 0.05, building.lotDepth]} />
+            <meshStandardMaterial
+              color={building.lotKind === 'gravel' ? COLORS.ground.stone : COLORS.ground.base}
+              roughness={0.96}
+            />
+          </mesh>
+          <mesh position={[lotFenceX, 0.16, 0]}>
+            <boxGeometry args={[0.08, 0.26, building.lotDepth * 0.84]} />
+            <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.84} />
+          </mesh>
+
+          {building.lotKind === 'garden' ? (
+            <>
+              <mesh position={[0.55 * sideDirection, 0.13, -building.lotDepth * 0.18]}>
+                <boxGeometry args={[building.lotWidth * 0.34, 0.18, building.lotDepth * 0.26]} />
+                <meshStandardMaterial color={COLORS.foliage} roughness={1} />
+              </mesh>
+              <mesh position={[-0.3 * sideDirection, 0.12, building.lotDepth * 0.22]}>
+                <boxGeometry args={[building.lotWidth * 0.24, 0.16, building.lotDepth * 0.22]} />
+                <meshStandardMaterial color={COLORS.foliage} roughness={1} />
+              </mesh>
+            </>
+          ) : (
+            <>
+              <mesh position={[0.32 * sideDirection, 0.08, -building.lotDepth * 0.16]}>
+                <boxGeometry args={[0.42, 0.14, 0.56]} />
+                <meshStandardMaterial color={COLORS.stone} roughness={0.9} />
+              </mesh>
+              <mesh position={[-0.44 * sideDirection, 0.06, building.lotDepth * 0.12]}>
+                <boxGeometry args={[0.32, 0.1, 0.42]} />
+                <meshStandardMaterial color={COLORS.stone} roughness={0.92} />
+              </mesh>
+            </>
+          )}
+        </group>
+      ) : null}
+    </group>
   )
 }
 
@@ -213,43 +223,43 @@ function GroundPlane() {
     <>
       <RigidBody type="fixed" colliders={false} friction={1}>
         <CuboidCollider args={[halfWorldSize, 0.6, halfWorldSize]} position={[0, -0.6, 0]} />
-        <mesh position={[0, -0.6, 0]} receiveShadow>
+        <mesh position={[0, -0.6, 0]}>
           <boxGeometry args={[WORLD_CONFIG.size, 1.2, WORLD_CONFIG.size]} />
           <meshStandardMaterial color={COLORS.ground.base} roughness={1} />
         </mesh>
       </RigidBody>
 
-      <mesh position={[0, 0.02, 0]} receiveShadow>
+      <mesh position={[0, 0.02, 0]}>
         <boxGeometry args={[WORLD_CONFIG.streetWidth, 0.04, WORLD_CONFIG.streetLength]} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.88} />
       </mesh>
 
-      <mesh position={[0, 0.045, 0]} receiveShadow>
+      <mesh position={[0, 0.045, 0]}>
         <boxGeometry args={[WORLD_CONFIG.streetWidth * 0.62, 0.02, WORLD_CONFIG.streetLength - 1.4]} />
         <meshStandardMaterial color={COLORS.ground.stone} roughness={0.76} />
       </mesh>
 
-      <mesh position={WORLD_CONFIG.westLanePosition} receiveShadow>
+      <mesh position={WORLD_CONFIG.westLanePosition}>
         <boxGeometry args={WORLD_CONFIG.westLaneSize} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.9} />
       </mesh>
 
-      <mesh position={WORLD_CONFIG.eastLanePosition} receiveShadow>
+      <mesh position={WORLD_CONFIG.eastLanePosition}>
         <boxGeometry args={WORLD_CONFIG.eastLaneSize} />
         <meshStandardMaterial color={COLORS.ground.street} roughness={0.9} />
       </mesh>
 
-      <mesh position={WORLD_CONFIG.pagodaCourtPosition} receiveShadow>
+      <mesh position={WORLD_CONFIG.pagodaCourtPosition}>
         <boxGeometry args={WORLD_CONFIG.pagodaCourtSize} />
         <meshStandardMaterial color={COLORS.ground.stone} roughness={0.88} />
       </mesh>
 
-      <mesh position={[-6, 0.05, 0]} receiveShadow>
+      <mesh position={[-6, 0.05, 0]}>
         <boxGeometry args={[WORLD_CONFIG.sidewalkWidth, 0.1, WORLD_CONFIG.streetLength]} />
         <meshStandardMaterial color={COLORS.ground.curb} roughness={0.86} />
       </mesh>
 
-      <mesh position={[6, 0.05, 0]} receiveShadow>
+      <mesh position={[6, 0.05, 0]}>
         <boxGeometry args={[WORLD_CONFIG.sidewalkWidth, 0.1, WORLD_CONFIG.streetLength]} />
         <meshStandardMaterial color={COLORS.ground.curb} roughness={0.86} />
       </mesh>
@@ -284,15 +294,13 @@ function GroundPlane() {
 
 const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: MachiyaConfig }) {
   const { depth, facing, height, position, stories, width } = building
+  const lodLevel = useLodLevel(position, DETAIL_DISTRICT_RADIUS * 3, DETAIL_DISTRICT_RADIUS * 6)
   const bodyMetrics = getMachiyaBodyMetrics(building)
   const { lowerFloorHeight, upperDepth, upperFloorHeight, upperWidth } = bodyMetrics
-  const frontX = getMachiyaFacadeX(building)
-  const facadeScreenX = frontX + facing * 0.18
-  const facadeSlatX = frontX + facing * 0.24
-  const entranceDoorX = frontX + facing * 0.3
-  const upperScreenX = frontX + facing * 0.2
-  const upperSlatX = frontX + facing * 0.26
-  const windowTop = stories === 2 ? lowerFloorHeight + upperFloorHeight * 0.56 : lowerFloorHeight * 0.8
+  const roofProfile = MACHIYA_ROOF_PROFILES[stories]
+  const roofGeometry = getMachiyaRoofGeometry(building)
+
+  // Hooks must be called unconditionally
   const lowerSlatPositions = useMemo(
     () => Array.from({ length: 5 }, (_, index) => -depth * 0.28 + index * (depth * 0.14)),
     [depth],
@@ -301,28 +309,57 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
     () => Array.from({ length: 4 }, (_, index) => -depth * 0.21 + index * (depth * 0.14)),
     [depth],
   )
-  const colliderSections = getMachiyaColliderSections(building)
-  const canopyWidth = depth * (stories === 2 ? 0.72 : 0.64)
-  const lanternZ = building.signStyle === 'vertical' ? -0.95 : 0.9
 
-  return (
-    <group position={position}>
-      <RigidBody type="fixed" colliders={false}>
-        {colliderSections.map((section, index) => (
-          <CuboidCollider
-            key={`${building.name}-collider-${index}`}
-            args={section.halfExtents}
-            position={section.position}
-            rotation={section.rotation}
-          />
-        ))}
+  // ── Far LOD: simplified box + 2 roof slopes + ridge ──────────────────
+  if (lodLevel === 'far') {
+    return (
+      <group position={position}>
+        <mesh position={[0, lowerFloorHeight / 2, 0]}>
+          <boxGeometry args={[width, lowerFloorHeight, depth]} />
+          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.96} />
+        </mesh>
+        {stories === 2 ? (
+          <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]}>
+            <boxGeometry args={[upperWidth, upperFloorHeight, upperDepth]} />
+            <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
+          </mesh>
+        ) : null}
+        <RoofSlope
+          anchorX={-roofGeometry.mainAnchorHalfWidth}
+          anchorY={roofGeometry.roofSeatY}
+          span={roofGeometry.mainSpan}
+          depth={roofGeometry.roofDepth}
+          thickness={roofProfile.mainThickness}
+          pitch={roofProfile.mainPitch}
+          direction={1}
+        />
+        <RoofSlope
+          anchorX={roofGeometry.mainAnchorHalfWidth}
+          anchorY={roofGeometry.roofSeatY}
+          span={roofGeometry.mainSpan}
+          depth={roofGeometry.roofDepth}
+          thickness={roofProfile.mainThickness}
+          pitch={roofProfile.mainPitch}
+          direction={-1}
+        />
+        <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]}>
+          <boxGeometry args={[roofProfile.ridgeWidth, roofProfile.ridgeHeight, roofGeometry.roofDepth + 0.12]} />
+          <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.76} />
+        </mesh>
+      </group>
+    )
+  }
 
-        <mesh position={[0, 0.16, 0]} receiveShadow>
+  // ── Mid LOD: body + trim + roof, no colliders / details ──────────────
+  if (lodLevel === 'mid') {
+    return (
+      <group position={position}>
+        <mesh position={[0, 0.16, 0]}>
           <boxGeometry args={[width + 0.22, 0.18, depth + 0.26]} />
           <meshStandardMaterial color={COLORS.stone} roughness={0.86} />
         </mesh>
 
-        <mesh position={[0, lowerFloorHeight / 2, 0]} castShadow receiveShadow>
+        <mesh position={[0, lowerFloorHeight / 2, 0]}>
           <boxGeometry args={[width, lowerFloorHeight, depth]} />
           <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.94} />
         </mesh>
@@ -339,7 +376,74 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
 
         {stories === 2 ? (
           <>
-            <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]} castShadow receiveShadow>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]}>
+              <boxGeometry args={[upperWidth, upperFloorHeight, upperDepth]} />
+              <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
+            </mesh>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight + 0.08, 0]}>
+              <boxGeometry args={[upperWidth + 0.32, 0.14, upperDepth + 0.3]} />
+              <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.84} />
+            </mesh>
+          </>
+        ) : (
+          <mesh position={[0, height * 0.56, 0]}>
+            <boxGeometry args={[width * 0.94, height * 0.24, depth * 0.88]} />
+            <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
+          </mesh>
+        )}
+
+        <MachiyaRoof building={building} />
+      </group>
+    )
+  }
+
+  // ── Near LOD: full detail with colliders ─────────────────────────────
+  const frontX = getMachiyaFacadeX(building)
+  const facadeScreenX = frontX + facing * 0.18
+  const facadeSlatX = frontX + facing * 0.24
+  const entranceDoorX = frontX + facing * 0.3
+  const upperScreenX = frontX + facing * 0.2
+  const upperSlatX = frontX + facing * 0.26
+  const windowTop = stories === 2 ? lowerFloorHeight + upperFloorHeight * 0.56 : lowerFloorHeight * 0.8
+  const colliderSections = getMachiyaColliderSections(building)
+  const canopyWidth = depth * (stories === 2 ? 0.72 : 0.64)
+  const lanternZ = building.signStyle === 'vertical' ? -0.95 : 0.9
+
+  return (
+    <group position={position}>
+      <RigidBody type="fixed" colliders={false}>
+        {colliderSections.map((section, index) => (
+          <CuboidCollider
+            key={`${building.name}-collider-${index}`}
+            args={section.halfExtents}
+            position={section.position}
+            rotation={section.rotation}
+          />
+        ))}
+
+        <mesh position={[0, 0.16, 0]}>
+          <boxGeometry args={[width + 0.22, 0.18, depth + 0.26]} />
+          <meshStandardMaterial color={COLORS.stone} roughness={0.86} />
+        </mesh>
+
+        <mesh position={[0, lowerFloorHeight / 2, 0]}>
+          <boxGeometry args={[width, lowerFloorHeight, depth]} />
+          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.94} />
+        </mesh>
+
+        <mesh position={[0, 1.06, 0]}>
+          <boxGeometry args={[width + 0.12, 0.2, depth + 0.14]} />
+          <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.88} />
+        </mesh>
+
+        <mesh position={[0, lowerFloorHeight + 0.08, 0]}>
+          <boxGeometry args={[width + 0.42, 0.14, depth + 0.54]} />
+          <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
+        </mesh>
+
+        {stories === 2 ? (
+          <>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]}>
               <boxGeometry args={[upperWidth, upperFloorHeight, upperDepth]} />
               <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
             </mesh>
@@ -350,18 +454,18 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
             </mesh>
           </>
         ) : (
-          <mesh position={[0, height * 0.56, 0]} castShadow receiveShadow>
+          <mesh position={[0, height * 0.56, 0]}>
             <boxGeometry args={[width * 0.94, height * 0.24, depth * 0.88]} />
             <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
           </mesh>
         )}
 
-        <mesh position={[frontX, lowerFloorHeight * 0.52, 0]} receiveShadow>
+        <mesh position={[frontX, lowerFloorHeight * 0.52, 0]}>
           <boxGeometry args={[0.14, lowerFloorHeight * 0.82, depth * 0.84]} />
           <meshStandardMaterial color={COLORS.machiya.lattice} roughness={0.84} />
         </mesh>
 
-        <mesh position={[facadeScreenX, 1.02, 0]} receiveShadow>
+        <mesh position={[facadeScreenX, 1.02, 0]}>
           <boxGeometry args={[0.08, 1.4, depth * 0.66]} />
           <meshStandardMaterial
             color={COLORS.machiya.screen}
@@ -372,23 +476,23 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
         </mesh>
 
         {lowerSlatPositions.map((z, index) => (
-          <mesh key={`${building.name}-lower-slat-${index}`} position={[facadeSlatX, 1.02, z]} receiveShadow>
+          <mesh key={`${building.name}-lower-slat-${index}`} position={[facadeSlatX, 1.02, z]}>
             <boxGeometry args={[0.08, 1.44, 0.08]} />
             <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.8} />
           </mesh>
         ))}
 
-        <mesh position={[facadeSlatX, 1.2, 0]} receiveShadow>
+        <mesh position={[facadeSlatX, 1.2, 0]}>
           <boxGeometry args={[0.08, 0.06, depth * 0.66]} />
           <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.8} />
         </mesh>
 
-        <mesh position={[entranceDoorX, 0.92, 0]} receiveShadow>
+        <mesh position={[entranceDoorX, 0.92, 0]}>
           <boxGeometry args={[0.18, 1.35, 1.55]} />
           <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.8} />
         </mesh>
 
-        <mesh position={[upperScreenX, windowTop, 0]} receiveShadow>
+        <mesh position={[upperScreenX, windowTop, 0]}>
           <boxGeometry args={[0.1, 0.86, depth * 0.58]} />
           <meshStandardMaterial
             color={COLORS.machiya.screen}
@@ -403,7 +507,7 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
               <mesh
                 key={`${building.name}-upper-slat-${index}`}
                 position={[upperSlatX, windowTop, z]}
-                receiveShadow
+               
               >
                 <boxGeometry args={[0.08, 0.86, 0.08]} />
                 <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.8} />
@@ -413,7 +517,7 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
 
         {building.canopyDepth > 0.6 ? (
           <group position={[frontX + facing * 0.46, lowerFloorHeight + 0.22, 0]} rotation={[0, 0, facing * 0.18]}>
-            <mesh castShadow>
+            <mesh>
               <boxGeometry args={[building.canopyDepth, 0.1, canopyWidth]} />
               <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.8} />
             </mesh>
@@ -426,20 +530,20 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
           </group>
         ) : null}
 
-        <mesh position={[frontX + facing * 0.5, 0.18, 0]} receiveShadow>
+        <mesh position={[frontX + facing * 0.5, 0.18, 0]}>
           <boxGeometry args={[0.85, 0.16, 2.3]} />
           <meshStandardMaterial color={COLORS.stone} roughness={0.9} />
         </mesh>
 
         {building.signStyle === 'board' ? (
-          <mesh position={[frontX + facing * 0.1, lowerFloorHeight + 0.52, 0]} receiveShadow>
+          <mesh position={[frontX + facing * 0.1, lowerFloorHeight + 0.52, 0]}>
             <boxGeometry args={[0.12, 0.46, depth * 0.4]} />
             <meshStandardMaterial color={COLORS.machiya.lattice} roughness={0.8} />
           </mesh>
         ) : null}
 
         {building.signStyle === 'vertical' ? (
-          <mesh position={[frontX + facing * 0.72, 2.15, -depth * 0.18]} castShadow>
+          <mesh position={[frontX + facing * 0.72, 2.15, -depth * 0.18]}>
             <boxGeometry args={[0.18, 1.04, 0.48]} />
             <meshStandardMaterial color={COLORS.machiya.lattice} roughness={0.78} />
           </mesh>
@@ -504,7 +608,7 @@ function MachiyaRoof({ building }: { building: Pick<MachiyaConfig, 'stories' | '
         direction={-1}
       />
 
-      <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]} castShadow>
+      <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]}>
         <boxGeometry args={[roofProfile.ridgeWidth, roofProfile.ridgeHeight, roofGeometry.roofDepth + 0.12]} />
         <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.76} />
       </mesh>
@@ -531,7 +635,7 @@ function RoofSlope({
 }) {
   return (
     <group position={[anchorX, anchorY, 0]} rotation={[0, 0, direction * pitch]}>
-      <mesh position={[direction * span * 0.5, thickness * 0.5, 0]} castShadow>
+      <mesh position={[direction * span * 0.5, thickness * 0.5, 0]}>
         <boxGeometry args={[span, thickness, depth]} />
         <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.78} />
       </mesh>
@@ -558,112 +662,13 @@ function RoofEave({
 }) {
   return (
     <group position={[anchorX, anchorY, 0]} rotation={[0, 0, direction * pitch]}>
-      <mesh position={[-direction * span * 0.5, -thickness * 0.5, 0]} castShadow>
+      <mesh position={[-direction * span * 0.5, -thickness * 0.5, 0]}>
         <boxGeometry args={[span, thickness, depth]} />
         <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.8} />
       </mesh>
     </group>
   )
 }
-
-const OutskirtBuilding = memo(function OutskirtBuilding({ building }: { building: OutskirtBuildingConfig }) {
-  const bodyMetrics = getOutskirtBodyMetrics(building)
-  const roofGeometry = getOutskirtRoofGeometry(building)
-
-  return (
-    <group position={building.position} rotation={[0, building.rotationY, 0]}>
-      <mesh position={[0, bodyMetrics.lowerHeight / 2, 0]}>
-        <boxGeometry args={[building.width, bodyMetrics.lowerHeight, building.depth]} />
-        <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.96} />
-      </mesh>
-
-      {building.stories === 2 ? (
-        <mesh position={[0, bodyMetrics.lowerHeight + bodyMetrics.upperHeight / 2, 0]}>
-          <boxGeometry args={[bodyMetrics.upperWidth, bodyMetrics.upperHeight, bodyMetrics.upperDepth]} />
-          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.95} />
-        </mesh>
-      ) : (
-        <mesh position={[0, building.height * 0.68, 0]}>
-          <boxGeometry args={[building.width * 0.92, building.height * 0.18, building.depth * 0.9]} />
-          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.95} />
-        </mesh>
-      )}
-
-      <mesh position={[0, bodyMetrics.lowerHeight + 0.08, 0]}>
-        <boxGeometry args={[building.width + 0.18, 0.12, building.depth + 0.22]} />
-        <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.84} />
-      </mesh>
-
-      <mesh position={[0, bodyMetrics.windowBandY, building.depth / 2 - 0.04]}>
-        <boxGeometry args={[building.width * 0.58, building.stories === 2 ? 0.54 : 0.42, 0.08]} />
-        <meshStandardMaterial
-          color={COLORS.machiya.screen}
-          emissive={COLORS.lantern.paper}
-          emissiveIntensity={0.08}
-          roughness={0.98}
-        />
-      </mesh>
-
-      <RoofSlope
-        anchorX={-roofGeometry.roofSeatHalfWidth}
-        anchorY={roofGeometry.roofSeatY}
-        span={roofGeometry.mainSpan}
-        depth={roofGeometry.roofDepth}
-        thickness={roofGeometry.thickness}
-        pitch={roofGeometry.pitch}
-        direction={1}
-      />
-      <RoofSlope
-        anchorX={roofGeometry.roofSeatHalfWidth}
-        anchorY={roofGeometry.roofSeatY}
-        span={roofGeometry.mainSpan}
-        depth={roofGeometry.roofDepth}
-        thickness={roofGeometry.thickness}
-        pitch={roofGeometry.pitch}
-        direction={-1}
-      />
-
-      <mesh position={[0, roofGeometry.ridgeBaseY + roofGeometry.ridgeHeight / 2, 0]}>
-        <boxGeometry args={[roofGeometry.ridgeWidth, roofGeometry.ridgeHeight, roofGeometry.roofDepth + 0.08]} />
-        <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.8} />
-      </mesh>
-    </group>
-  )
-})
-
-const LanternPost = memo(function LanternPost({ lantern }: { lantern: LanternConfig }) {
-  return (
-    <group position={lantern.position}>
-      <mesh position={[0, lantern.height / 2, 0]} castShadow>
-        <cylinderGeometry args={[0.09, 0.11, lantern.height, 10]} />
-        <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.86} />
-      </mesh>
-
-      <mesh position={[0, lantern.height + 0.12, 0]}>
-        <boxGeometry args={[0.85, 0.08, 0.08]} />
-        <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
-      </mesh>
-
-      <mesh position={[0, lantern.height - 0.12, 0]}>
-        <cylinderGeometry args={[0.22, 0.28, 0.52, 14]} />
-        <meshStandardMaterial
-          color={COLORS.lantern.paper}
-          emissive={COLORS.lantern.glow}
-          emissiveIntensity={1.7}
-          roughness={0.7}
-        />
-      </mesh>
-
-      <pointLight
-        color={COLORS.lighting.warm}
-        intensity={lantern.intensity}
-        distance={10}
-        decay={2}
-        position={[0, lantern.height - 0.1, 0]}
-      />
-    </group>
-  )
-})
 
 interface TempleGateProps {
   position?: Vector3Tuple
@@ -713,7 +718,7 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
         <CuboidCollider args={pillarHalfExtents} position={rightPillarPosition} />
         <CuboidCollider args={upperBeamHalfExtents} position={upperBeamPosition} />
 
-        <mesh position={leftPillarPosition} rotation={[0, 0, pillarTilt]} castShadow>
+        <mesh position={leftPillarPosition} rotation={[0, 0, pillarTilt]}>
           {isGrand ? (
             <cylinderGeometry args={[pillarTopRadius, pillarBottomRadius, pillarHeight, 16]} />
           ) : (
@@ -722,7 +727,7 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
-        <mesh position={rightPillarPosition} rotation={[0, 0, -pillarTilt]} castShadow>
+        <mesh position={rightPillarPosition} rotation={[0, 0, -pillarTilt]}>
           {isGrand ? (
             <cylinderGeometry args={[pillarTopRadius, pillarBottomRadius, pillarHeight, 16]} />
           ) : (
@@ -731,31 +736,31 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
         </mesh>
 
-        <mesh position={upperBeamPosition} castShadow>
+        <mesh position={upperBeamPosition}>
           <boxGeometry args={upperBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.8} />
         </mesh>
 
-        <mesh position={tieBeamPosition} castShadow>
+        <mesh position={tieBeamPosition}>
           <boxGeometry args={tieBeamSize} />
           <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.8} />
         </mesh>
 
         {isGrand ? (
           <>
-            <mesh position={supplementalNukiPosition} castShadow>
+            <mesh position={supplementalNukiPosition}>
               <boxGeometry args={supplementalNukiSize} />
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
             </mesh>
 
-            <mesh position={shimakiPosition} castShadow>
+            <mesh position={shimakiPosition}>
               <boxGeometry args={shimakiCenterSize} />
               <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
             </mesh>
             <mesh
               position={[-4.42 * scale, shimakiPosition[1] - wingBeamRise, shimakiPosition[2]]}
               rotation={[0, 0, wingBeamTilt]}
-              castShadow
+             
             >
               <boxGeometry args={shimakiWingSize} />
               <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
@@ -763,20 +768,20 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
             <mesh
               position={[4.42 * scale, shimakiPosition[1] - wingBeamRise, shimakiPosition[2]]}
               rotation={[0, 0, -wingBeamTilt]}
-              castShadow
+             
             >
               <boxGeometry args={shimakiWingSize} />
               <meshStandardMaterial color={COLORS.shrine.vermilion} roughness={0.78} />
             </mesh>
 
-            <mesh position={kasagiPosition} castShadow>
+            <mesh position={kasagiPosition}>
               <boxGeometry args={kasagiCenterSize} />
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
             </mesh>
             <mesh
               position={[-4.82 * scale, kasagiPosition[1] - wingBeamRise * 1.2, kasagiPosition[2]]}
               rotation={[0, 0, wingBeamTilt]}
-              castShadow
+             
             >
               <boxGeometry args={kasagiWingSize} />
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
@@ -784,7 +789,7 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
             <mesh
               position={[4.82 * scale, kasagiPosition[1] - wingBeamRise * 1.2, kasagiPosition[2]]}
               rotation={[0, 0, -wingBeamTilt]}
-              castShadow
+             
             >
               <boxGeometry args={kasagiWingSize} />
               <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
@@ -801,7 +806,7 @@ const TempleGate = memo(function TempleGate({ position = [0, 0, 0], scale = 1, v
             </mesh>
           </>
         ) : (
-          <mesh position={topBeamPosition} castShadow>
+          <mesh position={topBeamPosition}>
             <boxGeometry args={topBeamSize} />
             <meshStandardMaterial color={COLORS.shrine.beam} roughness={0.82} />
           </mesh>
@@ -853,7 +858,7 @@ const PagodaTower = memo(function PagodaTower({ position }: { position: Vector3T
       <RigidBody type="fixed" colliders={false}>
         <CuboidCollider args={[3.4, 4.9, 3.4]} position={[0, 4.9, 0]} />
 
-        <mesh position={[0, 0.55, 0]} castShadow receiveShadow>
+        <mesh position={[0, 0.55, 0]}>
           <boxGeometry args={[6.8, 1.1, 6.8]} />
           <meshStandardMaterial color={COLORS.stone} roughness={0.9} />
         </mesh>
@@ -863,11 +868,11 @@ const PagodaTower = memo(function PagodaTower({ position }: { position: Vector3T
 
           return (
             <group key={`pagoda-tier-${index}`}>
-              <mesh position={[0, bodyCenterY, 0]} castShadow>
+              <mesh position={[0, bodyCenterY, 0]}>
                 <boxGeometry args={[tier.bodyWidth, tier.bodyHeight, tier.bodyDepth]} />
                 <meshStandardMaterial color={COLORS.pagoda.wood} roughness={0.86} />
               </mesh>
-              <mesh position={[0, roofY, 0]} castShadow>
+              <mesh position={[0, roofY, 0]}>
                 <boxGeometry args={[tier.roofWidth, 0.18, tier.roofDepth]} />
                 <meshStandardMaterial color={COLORS.pagoda.roof} roughness={0.78} />
               </mesh>
@@ -879,7 +884,7 @@ const PagodaTower = memo(function PagodaTower({ position }: { position: Vector3T
           )
         })}
 
-        <mesh position={[0, 9.9, 0]} castShadow>
+        <mesh position={[0, 9.9, 0]}>
           <cylinderGeometry args={[0.09, 0.12, 3.4, 10]} />
           <meshStandardMaterial color={COLORS.pagoda.finial} metalness={0.08} roughness={0.52} />
         </mesh>

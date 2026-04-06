@@ -28,15 +28,6 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
           position={[18, 24, 10]}
           color={COLORS.lighting.moon}
           intensity={0.9}
-          castShadow
-          shadow-mapSize-width={512}
-          shadow-mapSize-height={512}
-          shadow-camera-near={1}
-          shadow-camera-far={58}
-          shadow-camera-left={-24}
-          shadow-camera-right={24}
-          shadow-camera-top={32}
-          shadow-camera-bottom={-32}
         />
         <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
 
