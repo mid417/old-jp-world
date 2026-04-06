@@ -1,4 +1,5 @@
 import { memo, useMemo } from 'react'
+import { MeshStandardMaterial } from 'three'
 import { CuboidCollider, RigidBody } from '@react-three/rapier'
 import {
   COLORS,
@@ -25,6 +26,21 @@ import { useLodLevel, useDistanceVisible } from '../hooks/useLodLevel'
 import { ChunkManager } from './ChunkManager'
 import { InstancedLanterns } from './InstancedLanterns'
 import { InstancedOutskirtBuildings } from './InstancedOutskirtBuildings'
+
+// Shared material instances – created once at module load, reused across all MachiyaBlock
+// instances to reduce WebGL state changes and GPU memory overhead.
+const MACHIYA_SHARED_MATS = {
+  plaster96: new MeshStandardMaterial({ color: COLORS.machiya.plaster, roughness: 0.96 }),
+  plaster94: new MeshStandardMaterial({ color: COLORS.machiya.plaster, roughness: 0.94 }),
+  plaster92: new MeshStandardMaterial({ color: COLORS.machiya.plaster, roughness: 0.92 }),
+  trim76:    new MeshStandardMaterial({ color: COLORS.machiya.trim,    roughness: 0.76 }),
+  trim82:    new MeshStandardMaterial({ color: COLORS.machiya.trim,    roughness: 0.82 }),
+  wood88:    new MeshStandardMaterial({ color: COLORS.machiya.wood,    roughness: 0.88 }),
+  wood84:    new MeshStandardMaterial({ color: COLORS.machiya.wood,    roughness: 0.84 }),
+  roof78:    new MeshStandardMaterial({ color: COLORS.machiya.roof,    roughness: 0.78 }),
+  roof80:    new MeshStandardMaterial({ color: COLORS.machiya.roof,    roughness: 0.80 }),
+  stone86:   new MeshStandardMaterial({ color: COLORS.stone,           roughness: 0.86 }),
+}
 
 export function KyotoNightDistrict() {
   const chunkItems = useMemo(
@@ -314,14 +330,12 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
   if (lodLevel === 'far') {
     return (
       <group position={position}>
-        <mesh position={[0, lowerFloorHeight / 2, 0]}>
+        <mesh position={[0, lowerFloorHeight / 2, 0]} material={MACHIYA_SHARED_MATS.plaster96}>
           <boxGeometry args={[width, lowerFloorHeight, depth]} />
-          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.96} />
         </mesh>
         {stories === 2 ? (
-          <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]}>
+          <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]} material={MACHIYA_SHARED_MATS.plaster92}>
             <boxGeometry args={[upperWidth, upperFloorHeight, upperDepth]} />
-            <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
           </mesh>
         ) : null}
         <RoofSlope
@@ -342,9 +356,8 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
           pitch={roofProfile.mainPitch}
           direction={-1}
         />
-        <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]}>
+        <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]} material={MACHIYA_SHARED_MATS.trim76}>
           <boxGeometry args={[roofProfile.ridgeWidth, roofProfile.ridgeHeight, roofGeometry.roofDepth + 0.12]} />
-          <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.76} />
         </mesh>
       </group>
     )
@@ -354,41 +367,34 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
   if (lodLevel === 'mid') {
     return (
       <group position={position}>
-        <mesh position={[0, 0.16, 0]}>
+        <mesh position={[0, 0.16, 0]} material={MACHIYA_SHARED_MATS.stone86}>
           <boxGeometry args={[width + 0.22, 0.18, depth + 0.26]} />
-          <meshStandardMaterial color={COLORS.stone} roughness={0.86} />
         </mesh>
 
-        <mesh position={[0, lowerFloorHeight / 2, 0]}>
+        <mesh position={[0, lowerFloorHeight / 2, 0]} material={MACHIYA_SHARED_MATS.plaster94}>
           <boxGeometry args={[width, lowerFloorHeight, depth]} />
-          <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.94} />
         </mesh>
 
-        <mesh position={[0, 1.06, 0]}>
+        <mesh position={[0, 1.06, 0]} material={MACHIYA_SHARED_MATS.wood88}>
           <boxGeometry args={[width + 0.12, 0.2, depth + 0.14]} />
-          <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.88} />
         </mesh>
 
-        <mesh position={[0, lowerFloorHeight + 0.08, 0]}>
+        <mesh position={[0, lowerFloorHeight + 0.08, 0]} material={MACHIYA_SHARED_MATS.trim82}>
           <boxGeometry args={[width + 0.42, 0.14, depth + 0.54]} />
-          <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
         </mesh>
 
         {stories === 2 ? (
           <>
-            <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]}>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight / 2, 0]} material={MACHIYA_SHARED_MATS.plaster92}>
               <boxGeometry args={[upperWidth, upperFloorHeight, upperDepth]} />
-              <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
             </mesh>
-            <mesh position={[0, lowerFloorHeight + upperFloorHeight + 0.08, 0]}>
+            <mesh position={[0, lowerFloorHeight + upperFloorHeight + 0.08, 0]} material={MACHIYA_SHARED_MATS.wood84}>
               <boxGeometry args={[upperWidth + 0.32, 0.14, upperDepth + 0.3]} />
-              <meshStandardMaterial color={COLORS.machiya.wood} roughness={0.84} />
             </mesh>
           </>
         ) : (
-          <mesh position={[0, height * 0.56, 0]}>
+          <mesh position={[0, height * 0.56, 0]} material={MACHIYA_SHARED_MATS.plaster92}>
             <boxGeometry args={[width * 0.94, height * 0.24, depth * 0.88]} />
-            <meshStandardMaterial color={COLORS.machiya.plaster} roughness={0.92} />
           </mesh>
         )}
 
@@ -421,9 +427,8 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
           />
         ))}
 
-        <mesh position={[0, 0.16, 0]}>
+        <mesh position={[0, 0.16, 0]} material={MACHIYA_SHARED_MATS.stone86}>
           <boxGeometry args={[width + 0.22, 0.18, depth + 0.26]} />
-          <meshStandardMaterial color={COLORS.stone} roughness={0.86} />
         </mesh>
 
         <mesh position={[0, lowerFloorHeight / 2, 0]}>
@@ -517,14 +522,12 @@ const MachiyaBlock = memo(function MachiyaBlock({ building }: { building: Machiy
 
         {building.canopyDepth > 0.6 ? (
           <group position={[frontX + facing * 0.46, lowerFloorHeight + 0.22, 0]} rotation={[0, 0, facing * 0.18]}>
-            <mesh>
+            <mesh material={MACHIYA_SHARED_MATS.roof80}>
               <boxGeometry args={[building.canopyDepth, 0.1, canopyWidth]} />
-              <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.8} />
             </mesh>
             {[-canopyWidth * 0.22, canopyWidth * 0.22].map((z, index) => (
-              <mesh key={`${building.name}-canopy-strut-${index}`} position={[-facing * building.canopyDepth * 0.24, -0.28, z]}>
+              <mesh key={`${building.name}-canopy-strut-${index}`} position={[-facing * building.canopyDepth * 0.24, -0.28, z]} material={MACHIYA_SHARED_MATS.trim82}>
                 <boxGeometry args={[0.05, 0.56, 0.05]} />
-                <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.82} />
               </mesh>
             ))}
           </group>
@@ -608,9 +611,8 @@ function MachiyaRoof({ building }: { building: Pick<MachiyaConfig, 'stories' | '
         direction={-1}
       />
 
-      <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]}>
+      <mesh position={[0, roofGeometry.ridgeBaseY + roofProfile.ridgeHeight / 2, 0]} material={MACHIYA_SHARED_MATS.trim76}>
         <boxGeometry args={[roofProfile.ridgeWidth, roofProfile.ridgeHeight, roofGeometry.roofDepth + 0.12]} />
-        <meshStandardMaterial color={COLORS.machiya.trim} roughness={0.76} />
       </mesh>
     </>
   )
@@ -635,9 +637,8 @@ function RoofSlope({
 }) {
   return (
     <group position={[anchorX, anchorY, 0]} rotation={[0, 0, direction * pitch]}>
-      <mesh position={[direction * span * 0.5, thickness * 0.5, 0]}>
+      <mesh position={[direction * span * 0.5, thickness * 0.5, 0]} material={MACHIYA_SHARED_MATS.roof78}>
         <boxGeometry args={[span, thickness, depth]} />
-        <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.78} />
       </mesh>
     </group>
   )
@@ -662,9 +663,8 @@ function RoofEave({
 }) {
   return (
     <group position={[anchorX, anchorY, 0]} rotation={[0, 0, direction * pitch]}>
-      <mesh position={[-direction * span * 0.5, -thickness * 0.5, 0]}>
+      <mesh position={[-direction * span * 0.5, -thickness * 0.5, 0]} material={MACHIYA_SHARED_MATS.roof80}>
         <boxGeometry args={[span, thickness, depth]} />
-        <meshStandardMaterial color={COLORS.machiya.roof} roughness={0.8} />
       </mesh>
     </group>
   )

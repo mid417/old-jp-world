@@ -66,9 +66,9 @@ export function InstancedLanterns() {
 
   return (
     <>
-      <instancedMesh ref={poleRef} args={[resources.poleGeo, resources.poleMat, count]} frustumCulled={false} />
-      <instancedMesh ref={crossbarRef} args={[resources.crossbarGeo, resources.crossbarMat, count]} frustumCulled={false} />
-      <instancedMesh ref={bodyRef} args={[resources.bodyGeo, resources.bodyMat, count]} frustumCulled={false} />
+      <instancedMesh ref={poleRef} args={[resources.poleGeo, resources.poleMat, count]} />
+      <instancedMesh ref={crossbarRef} args={[resources.crossbarGeo, resources.crossbarMat, count]} />
+      <instancedMesh ref={bodyRef} args={[resources.bodyGeo, resources.bodyMat, count]} />
 
       {STREET_LANTERNS.map((lantern) => (
         <LanternLight key={lantern.name} lantern={lantern} />

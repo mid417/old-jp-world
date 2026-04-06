@@ -1,5 +1,4 @@
 import { useTeleport, Interactable } from '@xrift/world-components'
-import { DoubleSide } from 'three'
 
 export interface TeleportPortalProps {
   id: string
@@ -38,7 +37,7 @@ export function TeleportPortal({
         {/* 輪の内側をカバーする当たり判定用の透明ディスク（内径 = torus radius - tube radius = 1.12） */}
         <mesh>
           <circleGeometry args={[1.12, 64]} />
-          <meshBasicMaterial transparent opacity={0} depthWrite={false} side={DoubleSide} />
+          <meshBasicMaterial transparent opacity={0} depthWrite={false} />
         </mesh>
       </Interactable>
     </group>

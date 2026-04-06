@@ -7,7 +7,7 @@ export function LiveStage() {
       <RigidBody type="fixed">
         <CylinderCollider args={[0.6, 9.6]} position={[0, 0.6, 0]} />
         <mesh position={[0, 0.6, 0]}>
-          <cylinderGeometry args={[9.6, 9.96, 1.2, 64]} />
+          <cylinderGeometry args={[9.6, 9.96, 1.2, 32]} />
           <meshStandardMaterial color="#8B1A0A" roughness={0.8} metalness={0.1} />
         </mesh>
       </RigidBody>
@@ -15,7 +15,7 @@ export function LiveStage() {
       <RigidBody type="fixed">
         <CylinderCollider args={[0.5, 6.6]} position={[0, 1.7, 0]} />
         <mesh position={[0, 1.7, 0]}>
-          <cylinderGeometry args={[6.6, 6.96, 1.0, 64]} />
+          <cylinderGeometry args={[6.6, 6.96, 1.0, 32]} />
           <meshStandardMaterial color="#CC2200" roughness={0.7} metalness={0.15} />
         </mesh>
       </RigidBody>

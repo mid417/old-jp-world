@@ -1,6 +1,5 @@
-import { useRef, useMemo } from 'react'
-import { useFrame } from '@react-three/fiber'
-import { BackSide, Color, ShaderMaterial } from 'three'
+import { useMemo } from 'react'
+import { BackSide, Color } from 'three'
 import { COLORS } from '../constants'
 
 const vertexShader = /* glsl */ `
@@ -104,20 +103,12 @@ const createUniforms = () => ({
 })
 
 export function NightSkybox({ radius = 420 }: { radius?: number }) {
-  const materialRef = useRef<ShaderMaterial>(null)
   const uniforms = useMemo(() => createUniforms(), [])
 
-  useFrame((state) => {
-    if (materialRef.current) {
-      materialRef.current.uniforms.uTime.value = state.clock.elapsedTime
-    }
-  })
-
   return (
-    <mesh>
-      <sphereGeometry args={[radius, 64, 32]} />
+    <mesh onBeforeRender={() => { uniforms.uTime.value = performance.now() / 1000 }}>
+      <sphereGeometry args={[radius, 32, 16]} />
       <shaderMaterial
-        ref={materialRef}
         vertexShader={vertexShader}
         fragmentShader={fragmentShader}
         uniforms={uniforms}
