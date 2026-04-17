@@ -21,3 +21,4 @@ dist
 .triplex
 .github
 .playwright-mcp
+.mcp.json
