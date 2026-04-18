@@ -1,0 +1,4 @@
+- GlowingFish motion.ts に schoolSpacing と schoolClusterSpread を追加。schoolSpacing は separation/perception/drift/formation 半径に連動し、schoolClusterSpread は mixed-school のサブ群分離量を制御する。
+- mixed-school は schoolSpacing=2.05, schoolClusterSpread=0.1, alignment=1.18, cohesion=1.34 で大きめの1群寄りに調整。
+- wild-random は wander=2.28, drift=0.72, flashTurn=0.16, speed=1.16 で不規則さを増やした。
+- npm test の既知失敗: tests/lod-performance.test.mjs の DETAIL_DISTRICT_RADIUS 期待値 36 と実値 24 の不一致。今回の変更前後で同じ失敗。
