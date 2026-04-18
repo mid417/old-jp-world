@@ -107,7 +107,7 @@ const vector3 = (x: number, y: number, z: number): Vector3Tuple => [x, y, z]
 export const BASE_WORLD_SIZE = 72
 export const CITY_AREA_MULTIPLIER = 5
 export const WORLD_DIMENSION_MULTIPLIER = 3
-export const DETAIL_DISTRICT_RADIUS = 12 * WORLD_DIMENSION_MULTIPLIER
+export const DETAIL_DISTRICT_RADIUS = 8 * WORLD_DIMENSION_MULTIPLIER
 const EXPANDED_WORLD_SIZE = Math.ceil(BASE_WORLD_SIZE * Math.sqrt(CITY_AREA_MULTIPLIER)) * WORLD_DIMENSION_MULTIPLIER
 
 export const WORLD_CONFIG = {
