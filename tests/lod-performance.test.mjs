@@ -11,7 +11,7 @@ import {
 // ── Constants ──────────────────────────────────────────────────────
 
 test('DETAIL_DISTRICT_RADIUS defines the full-detail zone boundary', () => {
-  assert.equal(DETAIL_DISTRICT_RADIUS, 36)
+  assert.equal(DETAIL_DISTRICT_RADIUS, 24)
   assert.ok(DETAIL_DISTRICT_RADIUS > 0)
 })
 

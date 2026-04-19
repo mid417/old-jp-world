@@ -61,6 +61,10 @@ const B_MARGIN = 6.0
 const MAX_NEIGHBORS = 1024
 const MIXED_GROUP_COUNT = 3
 const GROUP_ANGLE_STEP = TAU / FISH_COLORS.length
+const DETAILED_NEIGHBOR_RADIUS_RATIO = 0.52
+const DETAILED_NEIGHBOR_SEPARATION_MULTIPLIER = 1.8
+const MIN_FAR_SCHOOL_NEIGHBORS = 8
+const MAX_FAR_SCHOOL_NEIGHBORS = 24
 const SCHOOL_SPACING_PERCEPTION_GAIN = 0.58
 const SCHOOL_SPACING_DRIFT_RADIUS_GAIN = 0.42
 const SCHOOL_SPACING_FORMATION_GAIN = 0.72
@@ -94,11 +98,13 @@ interface BoidsState {
 // ── Spatial Hash ───────────────────────────────────────────
 
 class SpatialHash {
+  private readonly cellSize: number
   private readonly inv: number
   private readonly cells: Map<number, number[]> = new Map()
   private readonly pool: number[][] = []
 
   constructor(cellSize: number) {
+    this.cellSize = cellSize
     this.inv = 1.0 / cellSize
   }
 
@@ -126,14 +132,43 @@ class SpatialHash {
 
   queryInto(x: number, y: number, z: number, radius: number, buf: Int32Array): number {
     const inv = this.inv
+    const cellSize = this.cellSize
+    const radiusSq = radius * radius
     const cx = Math.floor(x * inv)
     const cy = Math.floor(y * inv)
     const cz = Math.floor(z * inv)
     const cellRadius = Math.max(1, Math.ceil(radius * inv))
     let count = 0
     for (let dx = -cellRadius; dx <= cellRadius; dx++) {
+      const xDist =
+        dx === 0
+          ? 0
+          : dx > 0
+            ? (cx + dx) * cellSize - x
+            : x - (cx + dx + 1) * cellSize
+      const xDistSq = xDist > 0 ? xDist * xDist : 0
+      if (xDistSq > radiusSq) continue
+
       for (let dy = -cellRadius; dy <= cellRadius; dy++) {
+        const yDist =
+          dy === 0
+            ? 0
+            : dy > 0
+              ? (cy + dy) * cellSize - y
+              : y - (cy + dy + 1) * cellSize
+        const yDistSq = yDist > 0 ? yDist * yDist : 0
+        if (xDistSq + yDistSq > radiusSq) continue
+
         for (let dz = -cellRadius; dz <= cellRadius; dz++) {
+          const zDist =
+            dz === 0
+              ? 0
+              : dz > 0
+                ? (cz + dz) * cellSize - z
+                : z - (cz + dz + 1) * cellSize
+          const zDistSq = zDist > 0 ? zDist * zDist : 0
+          if (xDistSq + yDistSq + zDistSq > radiusSq) continue
+
           const cell = this.cells.get(
             this.hashKey(cx + dx, cy + dy, cz + dz),
           )
@@ -241,6 +276,35 @@ function updateBoids(
   const ribbonSpacingScale = 1 + spacingOffset * SCHOOL_SPACING_RIBBON_GAIN
   const vortexSpacingScale =
     1 + spacingOffset * SCHOOL_SPACING_VORTEX_RADIUS_GAIN
+  const useSeparation = motion.separation > 0.001
+  const useAlignment = motion.alignment > 0.001
+  const useCohesion = motion.cohesion > 0.001
+  const useSchooling = useAlignment || useCohesion
+  const useDrift = motion.drift > 0.001
+  const useSchoolDrift = useDrift && motion.randomDrift < 0.999
+  const usePersonalDrift = useDrift && motion.randomDrift > 0.001
+  const useNoise = motion.randomDrift > 0.001
+  const schoolInfluence = Math.min(
+    1,
+    Math.max(motion.alignment, motion.cohesion) * 0.65 + motion.schoolMix * 0.35,
+  )
+  const detailedSchoolRadius = Math.min(
+    perceptionRadius,
+    Math.max(
+      separationRadius * DETAILED_NEIGHBOR_SEPARATION_MULTIPLIER,
+      perceptionRadius * DETAILED_NEIGHBOR_RADIUS_RATIO,
+    ),
+  )
+  const detailedSchoolSq = detailedSchoolRadius * detailedSchoolRadius
+  const farSchoolNeighborBudget = useSchooling
+    ? Math.round(
+        lerp(
+          MIN_FAR_SCHOOL_NEIGHBORS,
+          MAX_FAR_SCHOOL_NEIGHBORS,
+          schoolInfluence,
+        ),
+      )
+    : 0
   const waveLift = 1.3 + motion.wave * 3.8
   const vortexCenterX = Math.sin(time * 0.21) * 6.0
   const vortexCenterY = 7.0 + Math.sin(time * 0.47) * 1.3
@@ -282,6 +346,7 @@ function updateBoids(
     let cohY = 0
     let cohZ = 0
     let cohN = 0
+    let farSchoolSamples = 0
 
     const nc = hash.queryInto(px, py, pz, perceptionRadius, nBuf)
     for (let ni = 0; ni < nc; ni++) {
@@ -294,13 +359,19 @@ function updateBoids(
       const dSq = dx * dx + dy * dy + dz * dz
       if (dSq > percSq || dSq < 0.0001) continue
 
-      const dist = Math.sqrt(dSq)
-      const invD = 1.0 / dist
-      const jC = (j / FISH_COUNT_PER_COLOR) | 0
-      const same = myC === jC
-      const schoolWeight = same ? 1 : motion.schoolMix
+      let schoolWeight = 0
+      if (useSchooling) {
+        const jC = (j / FISH_COUNT_PER_COLOR) | 0
+        schoolWeight = myC === jC ? 1 : motion.schoolMix
+      }
 
-      if (dSq < sepSq) {
+      const canSeparate = useSeparation && dSq < sepSq
+      const canSchool = schoolWeight > 0.001
+      if (!canSeparate && !canSchool) continue
+
+      if (canSeparate) {
+        const dist = Math.sqrt(dSq)
+        const invD = 1.0 / dist
         const w = (separationRadius - dist) / Math.max(separationRadius, 0.0001)
         sepX -= dx * invD * w
         sepY -= dy * invD * w
@@ -308,15 +379,24 @@ function updateBoids(
         sepN++
       }
 
-      if (schoolWeight > 0.001) {
-        aliVx += velX[j] * schoolWeight
-        aliVy += velY[j] * schoolWeight
-        aliVz += velZ[j] * schoolWeight
-        aliN += schoolWeight
-        cohX += dx * schoolWeight
-        cohY += dy * schoolWeight
-        cohZ += dz * schoolWeight
-        cohN += schoolWeight
+      if (canSchool) {
+        if (dSq > detailedSchoolSq) {
+          if (farSchoolSamples >= farSchoolNeighborBudget) continue
+          farSchoolSamples++
+        }
+
+        if (useAlignment) {
+          aliVx += velX[j] * schoolWeight
+          aliVy += velY[j] * schoolWeight
+          aliVz += velZ[j] * schoolWeight
+          aliN += schoolWeight
+        }
+        if (useCohesion) {
+          cohX += dx * schoolWeight
+          cohY += dy * schoolWeight
+          cohZ += dz * schoolWeight
+          cohN += schoolWeight
+        }
       }
     }
 
@@ -324,96 +404,114 @@ function updateBoids(
     let fy = 0
     let fz = 0
 
-    if (sepN > 0) {
+    if (useSeparation && sepN > 0) {
       const inv = 1.0 / sepN
       const separationForce = motion.separation * (1 + spacingOffset * 0.3)
       fx += sepX * inv * SEP_WEIGHT * separationForce
       fy += sepY * inv * SEP_WEIGHT * separationForce
       fz += sepZ * inv * SEP_WEIGHT * separationForce
     }
-    if (aliN > 0) {
+    if (useAlignment && aliN > 0) {
       const inv = 1.0 / aliN
       fx += (aliVx * inv - vx) * ALI_WEIGHT * motion.alignment
       fy += (aliVy * inv - vy) * ALI_WEIGHT * motion.alignment
       fz += (aliVz * inv - vz) * ALI_WEIGHT * motion.alignment
     }
-    if (cohN > 0) {
+    if (useCohesion && cohN > 0) {
       const inv = 1.0 / cohN
       fx += cohX * inv * COH_WEIGHT * motion.cohesion
       fy += cohY * inv * COH_WEIGHT * motion.cohesion
       fz += cohZ * inv * COH_WEIGHT * motion.cohesion
     }
 
-    const structuredDriftAngle =
-      colorAngle + time * 0.18 + Math.sin(time * 0.24 + myC * 0.7) * 0.35
-    const mixedDriftAngle =
-      groupAngle +
-      time * 0.19 +
-      Math.sin(time * 0.28 + groupId * 1.1 * clusterSpread) *
-        (0.12 + clusterSpread * 0.3)
-    const schoolDriftAngle = lerp(
-      mixedDriftAngle,
-      structuredDriftAngle,
-      motion.colorAffinity,
-    )
-    const structuredDriftRadius =
-      (15 + Math.sin(time * 0.55 + myC * 0.9) * 4) * schoolDriftSpacingScale
-    const mixedDriftRadius =
-      (12.5 +
-        groupId * 0.9 * clusterSpread +
-        Math.sin(
-          time * 0.46 + groupAngle * 0.7 + groupId * 0.35 * clusterSpread,
-        ) * (1.1 + clusterSpread * 1.4)) *
-      schoolDriftSpacingScale
-    const schoolDriftRadius = lerp(
-      mixedDriftRadius,
-      structuredDriftRadius,
-      motion.colorAffinity,
-    )
-    const schoolDriftX = Math.cos(schoolDriftAngle) * schoolDriftRadius
-    const schoolDriftY =
-      lerp(
-        6.4 +
-          Math.sin(
-            time * 0.82 + groupAngle * 0.8 + groupId * 0.24 * clusterSpread,
-          ) * 1.4,
-        6.0 + Math.sin(time * 0.9 + myC * 0.6) * 1.6,
-        motion.colorAffinity,
-      ) +
-      spacingOffset * 0.15
-    const schoolDriftZ = Math.sin(schoolDriftAngle) * schoolDriftRadius
+    if (useDrift) {
+      let schoolDriftX = px
+      let schoolDriftY = py
+      let schoolDriftZ = pz
+      if (useSchoolDrift) {
+        const structuredDriftAngle =
+          colorAngle + time * 0.18 + Math.sin(time * 0.24 + myC * 0.7) * 0.35
+        const mixedDriftAngle =
+          groupAngle +
+          time * 0.19 +
+          Math.sin(time * 0.28 + groupId * 1.1 * clusterSpread) *
+            (0.12 + clusterSpread * 0.3)
+        const schoolDriftAngle = lerp(
+          mixedDriftAngle,
+          structuredDriftAngle,
+          motion.colorAffinity,
+        )
+        const structuredDriftRadius =
+          (15 + Math.sin(time * 0.55 + myC * 0.9) * 4) * schoolDriftSpacingScale
+        const mixedDriftRadius =
+          (12.5 +
+            groupId * 0.9 * clusterSpread +
+            Math.sin(
+              time * 0.46 + groupAngle * 0.7 + groupId * 0.35 * clusterSpread,
+            ) * (1.1 + clusterSpread * 1.4)) *
+          schoolDriftSpacingScale
+        const schoolDriftRadius = lerp(
+          mixedDriftRadius,
+          structuredDriftRadius,
+          motion.colorAffinity,
+        )
+        schoolDriftX = Math.cos(schoolDriftAngle) * schoolDriftRadius
+        schoolDriftY =
+          lerp(
+            6.4 +
+              Math.sin(
+                time * 0.82 + groupAngle * 0.8 + groupId * 0.24 * clusterSpread,
+              ) * 1.4,
+            6.0 + Math.sin(time * 0.9 + myC * 0.6) * 1.6,
+            motion.colorAffinity,
+          ) +
+          spacingOffset * 0.15
+        schoolDriftZ = Math.sin(schoolDriftAngle) * schoolDriftRadius
+      }
 
-    const personalDriftAngle =
-      personalPhase +
-      time * (0.38 + speedFactor * 0.24) +
-      Math.sin(time * 0.57 + personalPhase) * 0.82 +
-      Math.cos(time * 0.31 + personalPhase * 1.6) * 0.24 * motion.randomDrift
-    const personalDriftRadius =
-      12 +
-      speedFactor * 6.6 +
-      Math.sin(time * 0.91 + personalPhase * 1.3) * 4.6 +
-      motion.randomDrift * 2.2
-    const personalDriftX =
-      Math.cos(personalDriftAngle) * personalDriftRadius +
-      Math.sin(time * 0.23 + personalPhase) * (2.4 + motion.randomDrift * 1.2)
-    const personalDriftY =
-      6.2 +
-      Math.sin(time * 1.4 + personalPhase * 0.8) *
-        (2.2 + motion.randomDrift * 0.9) +
-      Math.cos(time * 0.51 + personalPhase) *
-        (0.8 + motion.randomDrift * 0.35)
-    const personalDriftZ =
-      Math.sin(personalDriftAngle) * personalDriftRadius +
-      Math.cos(time * 0.27 + personalPhase * 1.1) *
-        (2.4 + motion.randomDrift * 1.2)
+      let driftX = schoolDriftX
+      let driftY = schoolDriftY
+      let driftZ = schoolDriftZ
+      if (usePersonalDrift) {
+        const personalDriftAngle =
+          personalPhase +
+          time * (0.38 + speedFactor * 0.24) +
+          Math.sin(time * 0.57 + personalPhase) * 0.82 +
+          Math.cos(time * 0.31 + personalPhase * 1.6) * 0.24 * motion.randomDrift
+        const personalDriftRadius =
+          12 +
+          speedFactor * 6.6 +
+          Math.sin(time * 0.91 + personalPhase * 1.3) * 4.6 +
+          motion.randomDrift * 2.2
+        const personalDriftX =
+          Math.cos(personalDriftAngle) * personalDriftRadius +
+          Math.sin(time * 0.23 + personalPhase) * (2.4 + motion.randomDrift * 1.2)
+        const personalDriftY =
+          6.2 +
+          Math.sin(time * 1.4 + personalPhase * 0.8) *
+            (2.2 + motion.randomDrift * 0.9) +
+          Math.cos(time * 0.51 + personalPhase) *
+            (0.8 + motion.randomDrift * 0.35)
+        const personalDriftZ =
+          Math.sin(personalDriftAngle) * personalDriftRadius +
+          Math.cos(time * 0.27 + personalPhase * 1.1) *
+            (2.4 + motion.randomDrift * 1.2)
 
-    const driftX = lerp(schoolDriftX, personalDriftX, motion.randomDrift)
-    const driftY = lerp(schoolDriftY, personalDriftY, motion.randomDrift)
-    const driftZ = lerp(schoolDriftZ, personalDriftZ, motion.randomDrift)
+        if (useSchoolDrift) {
+          driftX = lerp(schoolDriftX, personalDriftX, motion.randomDrift)
+          driftY = lerp(schoolDriftY, personalDriftY, motion.randomDrift)
+          driftZ = lerp(schoolDriftZ, personalDriftZ, motion.randomDrift)
+        } else {
+          driftX = personalDriftX
+          driftY = personalDriftY
+          driftZ = personalDriftZ
+        }
+      }
 
-    fx += (driftX - px) * motion.drift * 0.55
-    fy += (driftY - py) * motion.drift * 0.35
-    fz += (driftZ - pz) * motion.drift * 0.55
+      fx += (driftX - px) * motion.drift * 0.55
+      fy += (driftY - py) * motion.drift * 0.35
+      fz += (driftZ - pz) * motion.drift * 0.55
+    }
 
     const wavePhase = lerp(
       sharedGroupPhase,
@@ -574,11 +672,13 @@ function updateBoids(
     fy += Math.sin(wp * 0.9 + i * 0.73) * WANDER_WEIGHT * 0.3 * wanderStrength
     fz += Math.cos(wp * 1.3 + i * 0.51) * WANDER_WEIGHT * wanderStrength
 
-    const noiseStrength = motion.randomDrift * (0.82 + speedFactor * 0.45)
-    const noiseTime = time * (0.92 + speedFactor * 0.58) + personalPhase
-    fx += Math.sin(noiseTime * 1.9 + i * 0.13) * noiseStrength * 1.95
-    fy += Math.cos(noiseTime * 1.1 + i * 0.07) * noiseStrength * 0.7
-    fz += Math.cos(noiseTime * 1.5 + i * 0.17) * noiseStrength * 1.95
+    if (useNoise) {
+      const noiseStrength = motion.randomDrift * (0.82 + speedFactor * 0.45)
+      const noiseTime = time * (0.92 + speedFactor * 0.58) + personalPhase
+      fx += Math.sin(noiseTime * 1.9 + i * 0.13) * noiseStrength * 1.95
+      fy += Math.cos(noiseTime * 1.1 + i * 0.07) * noiseStrength * 0.7
+      fz += Math.cos(noiseTime * 1.5 + i * 0.17) * noiseStrength * 1.95
+    }
 
     const fMag = Math.sqrt(fx * fx + fy * fy + fz * fz)
     if (fMag > MAX_FORCE) {

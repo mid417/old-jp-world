@@ -1,0 +1,4 @@
+- GlowingFish の Boids 最適化では SpatialHash.queryInto に球-AABB 判定を入れ、半径が cellSize を少し超えた時の不要セル走査を削減した。
+- updateBoids は separation のときだけ sqrt を計算し、alignment/cohesion は詳細半径外の far neighbor を budget で制限して outer shell の集計を抑える。
+- drift/random 系は motion.randomDrift に応じて school/personal/noise の不要計算をスキップできる。
+- 既知の npm test 失敗は tests/lod-performance.test.mjs の DETAIL_DISTRICT_RADIUS 期待値 36 と実値 24 の不一致で、魚変更とは無関係。
