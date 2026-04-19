@@ -23,13 +23,13 @@ const BUBBLE_COUNT = 400
 const MOTE_COUNT = 300
 
 const FISH_COLORS = [
-  '#ff4466', // ピンク
-  '#44ffaa', // エメラルドグリーン
-  '#4488ff', // ブルー
-  '#ffaa44', // オレンジ
-  '#aa44ff', // パープル
-  '#44ffff', // シアン
-  '#ffff44', // イエロー
+  '#ff5c7a', // ピンクレッド
+  '#ff9a4d', // オレンジ
+  '#ffe066', // イエロー
+  '#57f287', // グリーン
+  '#52d8ff', // シアン
+  '#4d78ff', // ブルー
+  '#c76bff', // バイオレット
 ]
 
 // ── Boids Constants ────────────────────────────────────────
@@ -77,6 +77,13 @@ function clamp(value: number, min: number, max: number) {
 
 function lerp(a: number, b: number, t: number) {
   return a + (b - a) * t
+}
+
+function updateFishMeshBounds(mesh: InstancedMesh | null) {
+  if (!mesh) return
+
+  mesh.instanceMatrix.needsUpdate = true
+  mesh.computeBoundingSphere()
 }
 
 // ── Types ──────────────────────────────────────────────────
@@ -778,6 +785,7 @@ const fishVertexShader = /* glsl */ `
 
 const fishFragmentShader = /* glsl */ `
   uniform vec3 color;
+  uniform vec3 accentColor;
   uniform float time;
   uniform float energy;
 
@@ -794,9 +802,13 @@ const fishFragmentShader = /* glsl */ `
     float NdotV = max(dot(n, v), 0.0);
     float fresnel = pow(1.0 - NdotV, 3.0);
 
-    // Iridescent colour shift along the body
-    float iri = sin(vBodyPos * 8.0 + time * 1.2 + vPhase * 6.2832) * 0.5 + 0.5;
-    vec3 shiftColor = mix(color, color.gbr, iri * 0.35);
+    // Rainbow body tint so the whole fish reads as a palette colour, not only the tail.
+    float bodyBlend = smoothstep(0.05, 0.95, vBodyPos);
+    vec3 rainbowBody = mix(color, accentColor, bodyBlend);
+
+    // Iridescent colour shift across the full body
+    float iri = sin(vBodyPos * 10.0 + time * 1.2 + vPhase * 6.2832) * 0.5 + 0.5;
+    vec3 shiftColor = mix(rainbowBody, mix(color, accentColor, iri), 0.28);
 
     // Scale-shimmer sparkle highlights
     float sparkle = sin(time * 15.0 + vPhase * 37.0 + vBodyPos * 25.0);
@@ -809,11 +821,11 @@ const fishFragmentShader = /* glsl */ `
     vec3 core = shiftColor * breathe;
 
     // Rim light
-    vec3 rimColor = mix(color * 2.0, vec3(1.0), 0.3);
+    vec3 rimColor = mix(rainbowBody * 1.9, vec3(1.0), 0.28);
     core += rimColor * fresnel * (0.8 + energy * 0.45);
 
     // Mode accent glow
-    core += shiftColor * energy * 0.18;
+    core += mix(rainbowBody, accentColor, 0.35 + iri * 0.25) * energy * 0.18;
 
     // Sparkle
     core += vec3(1.0) * sparkle;
@@ -1118,8 +1130,11 @@ export function GlowingFish() {
 
   const uniformsArray = useMemo(
     () =>
-      FISH_COLORS.map((colorHex) => ({
+      FISH_COLORS.map((colorHex, index) => ({
         color: { value: new Color(colorHex) },
+        accentColor: {
+          value: new Color(FISH_COLORS[(index + 1) % FISH_COLORS.length]),
+        },
         time: { value: 0 },
         energy: { value: 0 },
       })),
@@ -1199,7 +1214,7 @@ export function GlowingFish() {
         mesh.setMatrixAt(fi, matrix)
       }
 
-      mesh.instanceMatrix.needsUpdate = true
+      updateFishMeshBounds(mesh)
     }
   })
 

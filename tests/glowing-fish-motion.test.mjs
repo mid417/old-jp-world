@@ -89,3 +89,25 @@ test('GlowingFish update keeps the spatial hash and consumes the new motion axes
   assert.match(source, /SEPARATION_RADIUS \* schoolSpacing/)
   assert.doesNotMatch(source, /for \(let j = 0; j < n; j\+\+\)/)
 })
+
+test('GlowingFish updates instanced bounds so moving schools are not frustum-culled from the origin', () => {
+  const source = fs.readFileSync(
+    new URL('../src/components/GlowingFish/index.tsx', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(source, /function updateFishMeshBounds\(mesh: InstancedMesh \| null\)/)
+  assert.match(source, /mesh\.computeBoundingSphere\(\)/)
+  assert.match(source, /updateFishMeshBounds\(mesh\)/)
+})
+
+test('GlowingFish shader spreads palette colours across the body instead of only tinting the tail', () => {
+  const source = fs.readFileSync(
+    new URL('../src/components/GlowingFish/index.tsx', import.meta.url),
+    'utf8',
+  )
+
+  assert.match(source, /uniform vec3 accentColor;/)
+  assert.match(source, /vec3 rainbowBody = mix\(color, accentColor, bodyBlend\);/)
+  assert.match(source, /mix\(rainbowBody, mix\(color, accentColor, iri\), 0\.28\)/)
+})

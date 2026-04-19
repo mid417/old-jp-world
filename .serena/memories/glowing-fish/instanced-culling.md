@@ -1,0 +1,1 @@
+GlowingFish の魚群は毎フレーム instanceMatrix を更新する InstancedMesh。moving instanced mesh は境界未更新だと origin 基準で frustum culling されるため、描画更新ループ内で computeBoundingSphere() を呼んで bounds を更新する。
