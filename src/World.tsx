@@ -31,7 +31,9 @@ export function World({ position = [0, 0, 0], scale = 1 }: WorldProps) {
         />
         <pointLight position={[0, 12, 0]} color={COLORS.sky.glow} intensity={0.12} distance={52} decay={2} />
 
-        <GlowingFish />
+        <group position={[0, 1.8, 35]}>
+          <GlowingFish />
+        </group>
 
         {/* 小さい鳥居（GATE_POSITION付近）のポータル → 大きい鳥居南側へ */}
         <TeleportPortal

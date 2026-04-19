@@ -1,0 +1,2 @@
+- KyotoNightDistrict の ChunkManager 導入後、テレポート目印になる TempleGate を chunkItems に含めると描画消失の調査対象になりやすい。
+- 小鳥居・大鳥居は ChunkManager の外で直接描画し、街区建物と pagoda のみを chunkItems に残す方針。

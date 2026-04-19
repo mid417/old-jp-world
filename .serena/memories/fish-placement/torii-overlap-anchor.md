@@ -1,0 +1,3 @@
+- GlowingFish はローカル bounds が X/Z ±30、Y 2..15。World 側 group position が群れ全体のワールド基準点。
+- 小鳥居は GATE_POSITION = [0,0,66] を KyotoNightDistrict で使用。
+- 魚群を小鳥居にぎりぎり重ねたい場合、World の GlowingFish group Z を 24→35 程度にすると端がかかる。

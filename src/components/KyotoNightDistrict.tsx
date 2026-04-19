@@ -51,16 +51,6 @@ export function KyotoNightDistrict() {
         element: <MachiyaBlock building={building} />,
       })),
       {
-        key: 'gate',
-        position: GATE_POSITION,
-        element: <TempleGate position={GATE_POSITION} />,
-      },
-      {
-        key: 'giant-gate',
-        position: GIANT_GATE_POSITION,
-        element: <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} variant="grand" />,
-      },
-      {
         key: 'pagoda',
         position: PAGODA_POSITION,
         element: <PagodaTower position={PAGODA_POSITION} />,
@@ -74,6 +64,8 @@ export function KyotoNightDistrict() {
       <GroundPlane />
       <NearDistrictGroundDetails />
       <ChunkManager items={chunkItems} />
+      <TempleGate position={GATE_POSITION} />
+      <TempleGate position={GIANT_GATE_POSITION} scale={GIANT_GATE_SCALE} variant="grand" />
       <OutskirtRoadGrid />
       <InstancedOutskirtBuildings />
       <InstancedLanterns />
